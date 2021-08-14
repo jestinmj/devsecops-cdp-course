@@ -1,0 +1,71 @@
+name: Django                                  # workflow name
+
+on:
+  push:
+    branches:                                 # similar to "only" in GitLab
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest                    # similar to "image" in GitLab
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.6'
+
+      - run: |
+          pip3 install --upgrade virtualenv
+          virtualenv env
+          source env/bin/activate
+          pip install -r requirements.txt
+          python manage.py check
+
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.6'
+
+      - run: |
+          pip3 install --upgrade virtualenv
+          virtualenv env
+          source env/bin/activate
+          pip install -r requirements.txt
+          python manage.py test taskManager
+
+  secret_scanning:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v2
+
+      - run: docker run --rm -v $(pwd):/src hysnsec/trufflehog file:///src --json > trufflehog-output.json
+        continue-on-error: true             # allow the build to fail, similar to "allow_failure: true" in GitLab
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: TruffleHog
+          path: trufflehog-output.json
+        if: always()                        # what is this for?
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: secret_scanning
+    steps:
+      - run: echo "This is an integration step"
+      - run: exit 1
+        continue-on-error: true
+
+  prod:
+    runs-on: ubuntu-latest
+    needs: integration
+    steps:
+      - run: echo "This is a deploy step."
