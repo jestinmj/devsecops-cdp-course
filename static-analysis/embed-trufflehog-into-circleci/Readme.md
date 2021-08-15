@@ -341,3 +341,5 @@ You will notice that the secret_scanning job has failed but didn’t block the o
 As discussed, any change to the repo will kick start the pipeline.
 
 We can see the result of the pipeline by visiting our [CircleCI account](https://app.circleci.com/). Click Projects, select django.nv repository and select the appropriate pipeline to see the output.
+
+![circleci1](gambar/circleci1.png)

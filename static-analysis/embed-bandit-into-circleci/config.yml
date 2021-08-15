@@ -1,0 +1,83 @@
+jobs:
+  build:
+    docker:
+      - image: python:3.6                   # similar to "image" in GitLab
+    steps:
+      - checkout
+      - run: |                              # similar to "script" in GitLab
+          pip install -r requirements.txt
+          python manage.py check
+
+  test:
+    docker:
+      - image: python:3.6
+    steps:
+      - checkout
+      - run: |
+          pip install -r requirements.txt
+          python manage.py test taskManager
+
+  oast-frontend:
+    machine: true
+    steps:
+      - checkout
+
+      - run: docker run --rm -v $(pwd):/src -w /src hysnsec/retire --outputformat json --outputpath retirejs-output.json --severity high
+
+      - store_artifacts:
+          path: retirejs-output.json
+          destination: retirejs-artifact
+          when: always              # Even if the job fails, continue to the next stages
+
+  sast:
+    machine: true
+    steps:
+      - checkout
+
+      - run: docker run --rm -v $(pwd):/src hysnsec/bandit -r /src -f json -o /src/bandit-output.json
+
+      - store_artifacts:
+          path: bandit-output.json
+          destination: bandit-artifact
+          when: always              # Even if the job fails, continue to the next stages
+
+  integration:
+    docker:
+      - image: python:3.6
+    steps:
+      - checkout
+      - run:
+          command: |
+            echo "This is an integration step"
+            exit 1
+          when: always                    # Even if the job fails, continue to the next stages
+
+  prod:
+    docker:
+      - image: python:3.6
+    steps:
+      - checkout
+      - run: echo "This is a deploy step."
+
+workflows:
+  version: 2
+  django:
+    jobs:
+      - build
+      - test:
+          requires:
+            - build
+      - oast-frontend:
+          requires:
+            - test
+      - sast:
+          requires:
+            - oast-frontend
+      - integration:
+          requires:
+            - sast
+      - prod:
+          type: approval
+          requires:
+            - integration
+
