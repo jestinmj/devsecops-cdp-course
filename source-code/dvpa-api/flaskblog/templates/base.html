@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{% block meta_title %}Simple Blog{% endblock %}</title>
+    <link rel="shortcut icon" href="{{ url_for('static', filename='img/favicon.ico') }}">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet" media="screen">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet" media="screen">
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+
+{#    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css" integrity="sha384-TX8t27EcRE3e/ihU7zmQxVncDAy5uIKz4rEkgIXeMed4M0jlfIDPvg6uqKI2xXr2" crossorigin="anonymous">#}
+
+</head>
+
+<body>
+  {% block topbar %}
+  <nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse-3">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="/">Simple Blog</a>
+      </div>
+      <div class="navbar-collapse collapse" aria-expanded="false" id="navbar-collapse-3">
+         <ul class="nav nav-pills navbar-nav navbar-right">
+        {% if session['is_logged_in'] %}
+            <li><a href="{{ url_for('dashboard.index') }}"><i class="glyphicon glyphicon-off"></i> Dashboard</a></li>
+        <li><a href="{{ url_for('user.logout') }}"><i class="glyphicon glyphicon-off"></i> Logout</a></li>
+        {% else %}
+
+        <li><a href="{{ url_for('user.register') }}"><i class="glyphicon glyphicon-off"></i> Register</a></li>
+        <li><a href="{{ url_for('user.login') }}"><i class="glyphicon glyphicon-off"></i> Login</a></li>
+        {% endif %}
+
+      </ul>
+          <form class="navbar-form navbar-right" action="{{ url_for('posts.search') }}">
+          <div class="form-group">
+            <input name="q" class="form-control cst__radius" placeholder="Search">
+          </div>
+          <button type="submit" class="btn btn-danger cst__radius"><span class="glyphicon glyphicon-search"></span></button>
+        </form>
+
+      </div><!--/.nav-collapse -->
+
+    </div>
+  </nav>
+  {% endblock %}
+
+  <div class="container main__container">
+    <div class="row">
+      <div class="col-md-8">
+        {% block content %}{% endblock %}
+      </div>
+
+      <div class="col-md-4 sidebar">
+        {% block sidebar %}{% endblock %}
+      </div>
+    </div><!-- end /.row -->    
+  </div><!-- end /.main__container -->
+
+  <footer class="blog-footer">
+    <p><a href="/">Simple Blog</a> - Powered <a href="http://flask.pocoo.org/" target="_blank">Flask</a> - Created by <a href="//python.web.id/agusmakmun/" target="_blank">Summon Agus</a></p>
+    <p>Copyright &copy; 2016 - All right reversed.</p>
+  </footer>
+</body>
+</html>

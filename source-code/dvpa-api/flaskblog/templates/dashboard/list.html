@@ -1,0 +1,116 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+    {% include 'includes/message.html' %}
+  <div class="strike-line top_0">
+    <span><small>My Posts</small></span>
+  </div>
+
+  <table class="table table-bordered table-striped">
+    <thead>
+      <th>No.</th>
+      <th>Title</th>
+      <th>Created</th>
+      <th>Actions</th>
+    </thead>
+    <tbody>
+    {% for post in posts %}
+      <tr>
+        <th>{{ loop.index }}</th>
+        <th><a href="{{ url_for('dashboard.edit', slug=post.slug) }}">{{ post.title }}</a></th>
+        <td>{{ post.created_date }}</td>
+        <td>
+          <a target="_blank" href="{{ url_for('posts.detail', slug=post.slug) }}" class="btn btn-xs btn-primary"><i class="glyphicon glyphicon-eye-open"></i> View</a>
+          <a href="{{ url_for('dashboard.edit', slug=post.slug) }}" class="btn btn-xs btn-warning"><i class="glyphicon glyphicon-edit"></i> Edit</a>
+          <a data-toggle="modal" data-target=".modal-{{ post.id|string() }}" class="btn btn-xs btn-danger"><i class="glyphicon glyphicon-trash"></i> Delete</a>
+        </td>
+      </tr>
+
+      <div class="modal fade modal-{{ post.id|string() }}" tabindex="{{ post.id|string() }}" role="dialog">
+        <div class="modal-dialog modal-sm" role="document">
+          <div class="modal-content">
+            <div class="panel-body text-center">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              Are you sure want to delete this post?<br /><b>{{ post.title }}</b>
+              <hr />
+
+              <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                <div class="btn-group" role="group">
+                  <button id="delete-button" onclick="delete_post('{{ post.id|string() }}')" class="btn btn-sm btn-danger"><i class="glyphicon glyphicon-trash"></i> Delete</button>
+                </div>
+                <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-sm btn-primary" data-dismiss="modal"><i class="glyphicon glyphicon-remove"></i> Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    </tbody>
+  </table>
+
+  <ul class="pager">
+    {% if posts.has_prev %}
+      <li><a href="{{ url_for('dashboard.page', page=posts.prev_num) }}">&larr; Newer posts</a></li>
+    {% else %}
+      <li class="disabled"><a>&larr; Newer posts</a></li>
+    {% endif %}
+
+    {% if posts.has_next %}
+      <li><a href="{{ url_for('dashboard.page', page=posts.next_num) }}">Older posts &rarr;</a></li>
+    {% else %}
+      <li class="disabled"><a>Older posts &rarr;</a></li>
+    {% endif %}
+  </ul>
+
+{#    <script>#}
+{#$( document ).ready(function() {#}
+{#    $.ajax({#}
+{#        url: '/dashboard', // url where to submit the request#}
+{#        type: "GET", // type of action POST || GET#}
+{#        dataType: 'json', // data type#}
+{#        headers: {Authorization: 'Bearer ' + localStorage.getItem("token")},#}
+{#        success: function (result) {#}
+{#            console.log(result);#}
+{#        },#}
+{#        error: function (xhr, resp, text) {#}
+{#            alert(resp)#}
+{#            console.log(xhr, resp, text);#}
+{#        }#}
+{#    });#}
+{#});#}
+{#    </script>#}
+
+    <script>
+   function delete_post(slug){
+       $.ajax({
+                url: `/api/v1/dashboard/post/delete/${slug}`, // url where to submit the request
+                type : "GET", // type of action POST || GET
+                dataType : 'json', // data type
+                contentType: 'application/json',
+                headers: {Authorization: 'Bearer ' + localStorage.getItem("token")},
+                success : function(result) {
+                    {#alert(result.msg);#}
+                    {#window.location = "/dashboard"#}
+                    location.reload();
+                },
+                error: function(xhr, resp, text) {
+                    console.log(xhr, resp, text);
+                    alert(xhr.responseJSON.msg)
+                }
+            })
+   }
+    </script>
+{% endblock %}
+
+
+{% block sidebar %}
+  <div class="strike-line top_0">
+    <span><small>Available Menus</small></span>
+  </div>
+  <div class="sidebar-module-inset">
+    <button onclick="location.href='{{ url_for("dashboard.create") }}'" class="btn btn-block btn-success cst__radius"><i class="glyphicon glyphicon-plus"></i> Create New Post</button>
+{#    <button onclick="location.href='{{ url_for("dashboard.create_tag") }}'" class="btn btn-block btn-warning cst__radius"><i class="glyphicon glyphicon-tag"></i> View Tags or Create</button>#}
+  </div><!-- end /.sidebar-module-inset --> 
+{% endblock %}

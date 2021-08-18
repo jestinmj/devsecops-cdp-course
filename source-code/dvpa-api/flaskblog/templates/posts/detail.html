@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{#{% block meta_title %}{{ post.title }} - {{ super() }} {% endblock %}#}
+
+{% block content %}
+  <h1 class="post-title"></h1>
+  <p class="meta">
+  </p>
+
+{#  {% if post.body %}#}
+    <p id="post-body"></p>
+{#  {% endif %}#}
+  
+  <div class="strike-line">
+{#    <span><small>SHARE THIS POST</small></span>#}
+  </div>
+  <div class="post-share">
+    <div class="btn-group btn-group-justified" role="group">
+      <div class="btn-group" role="group">
+{#        <a target="_blank" href='https://www.facebook.com/sharer/sharer.php?u={{ request.url }}&title={{ post.title }}' class="btn btn-primary">Facebook</a>#}
+      </div>
+      <div class="btn-group" role="group">
+        <a target="_blank" href='https://twitter.com/share' class="btn btn-info">Twitter</a>
+      </div>
+      <div class="btn-group" role="group">
+        <a target="_blank" href='https://plus.google.com/share?url={{ request.url }}' class="btn btn-danger">Google+</a>
+      </div>
+    </div>
+  </div>
+  <hr />
+
+{#  <div class="panel panel-default related cst__radius">#}
+{#    <div class="panel-heading">#}
+{#      <h3 class="panel-title">Related Posts</h3>#}
+{#    </div>#}
+{#    <ul class="list-group">#}
+{#      {% if related_posts|length > 1 %} {# handling for empty objects, such as django that only use {% empty %} #}
+{#        {% for rpost in related_posts %}#}
+{#          {% if not rpost == post %}#}
+{#            <li class="list-group-item">#}
+{#              <a href="{{ url_for('posts.detail', slug=rpost.slug) }}">{{ rpost.title }}</a> - <i>{{ rpost.created_date.strftime('%Y-%m-%d %H:%M') }}</i>#}
+{#            </li>#}
+{#          {% endif %}#}
+{#        {% endfor %}#}
+{#      {% else %}#}
+{#        <p class="panel-body">No related posts yet!</p>#}
+{#      {% endif %}#}
+{#    </ul>#}
+{#  </div><!-- end /.related -->#}
+
+    <script>
+    var slug = window.location.pathname.split("/")[2]
+     $( document ).ready(function() {
+        var url = `/api/v1/detail/${slug}`;
+        $.get(url, function(data, status){
+            console.log(data)
+            $(".post-title").text(data.post.title);
+            $("#post-body").text(data.post.body);
+            $(".meta").text("Created at:"+data.post.created_date)
+        });
+     });
+    </script>
+
+  <div class="disqus-comments">
+    <div id="disqus_thread"></div>
+  </div><!-- end /.disqus-comments -->
+{% endblock %}
+
+
+{% block sidebar %}
+  <div class="sidebar-module-inset">
+    <h4>Recent Comments</h4>
+    <div id="dsq-recent-comments" class="dsq-widget"></div>
+  </div><!-- end /.sidebar-module-inset --> 
+{% endblock %}

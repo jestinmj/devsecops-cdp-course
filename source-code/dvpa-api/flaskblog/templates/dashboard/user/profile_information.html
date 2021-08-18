@@ -1,0 +1,112 @@
+{% extends "dashboard/base.html" %}
+{% block meta_title %}Profile Information{% endblock %}
+
+{% block content %}
+    {% include 'includes/message.html' %}
+    <div class="strike-line top_0">
+    <span><small>
+        Profile Information
+    </small></span>
+    </div>
+
+    <form action="{{ url_for('dashboard.password_change') }}" method="post">
+
+  <div class="form-group">
+    <label for="full_name">Full Name</label>
+    <input type="text" class="form-control" id="full_name" aria-describedby="full_name" name="full_name">
+{#    <small id="full_name" class="form-text text-muted">Enter your new password</small>#}
+  </div>
+
+        <div class="form-group">
+    <label for="email">Email</label>
+    <input type="email" class="form-control" id="email" aria-describedby="email" name="email">
+{#    <small id="email" class="form-text text-muted">Enter your new password</small>#}
+  </div>
+
+        <div class="form-group">
+    <label for="phone_number">Phone Number</label>
+    <input type="text" class="form-control" id="phone_number" aria-describedby="phone_number" name="phone_number">
+{#    <small id="email" class="form-text text-muted">Enter your new password</small>#}
+  </div>
+
+        <div class="form-group">
+    <label for="dob">Date Of Birth</label>
+    <input type="date" class="form-control" id="dob" aria-describedby="dob" name="phone_number">
+{#    <small id="email" class="form-text text-muted">Enter your new password</small>#}
+  </div>
+
+{#  <div class="form-group">#}
+{#    <label for="password">Password Confirmation</label>#}
+{#    <input type="password" class="form-control" id="password2" aria-describedby="password2" name="password2">#}
+{#    <small id="password2" class="form-text text-muted">Enter your password confirmation</small>#}
+{#  </div>#}
+
+
+        <div class="actions">
+            <input id="submit" type="submit" class="btn btn-primary" value="Save"></input>
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-default">Cancel</a>
+        </div>
+    </form>
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap-select.min.css') }}"/>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap-select.min.js') }}"></script>
+
+
+<script>
+function convertUTCDateToLocalDate(date) {
+    var newDate = new Date(date.getTime()+date.getTimezoneOffset()*60*1000);
+
+    var offset = date.getTimezoneOffset() / 60;
+    var hours = date.getHours();
+
+    newDate.setHours(hours - offset);
+
+    return newDate;
+}
+        // click on button submit
+         $( document ).ready(function() {
+    $.ajax({
+                url: '{{ url_for('api_profile_information',uid=session.get('id')) }}', // url where to submit the request
+                type: "GET", // type of action POST || GET
+                dataType: 'json', // data type
+                headers: {Authorization: 'Bearer ' + localStorage.getItem("token")},
+                success: function (result) {
+                    console.log(result)
+                    $('#full_name').val(result.full_name)
+                    $('#email').val(result.email)
+                    $('#phone_number').val(result.phone_number)
+
+                    var date = convertUTCDateToLocalDate(new Date(result.dob));
+
+                    $('#dob').val(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`)
+                },
+                error: function (xhr, resp, text) {
+                    alert(resp)
+                    console.log(xhr, resp, text);
+                }
+            });
+        });
+
+        $("#submit").on('click', function(e){
+            // send ajax
+            e.preventDefault();
+
+            $.ajax({
+                url: '{{ url_for('api_profile_information',uid=session.get('id')) }}', // url where to submit the request
+                type : "POST", // type of action POST || GET
+                dataType : 'json', // data type
+                contentType: 'application/json',
+                headers: {Authorization: 'Bearer ' + localStorage.getItem("token")},
+                data : JSON.stringify({"full_name": $("#full_name").val(), "email":$("#email").val(), "phone_number": $("#phone_number").val(), "dob": $("#dob").val() }), // post data || get data
+                success : function(result) {
+                    alert(result.msg);
+                },
+                error: function(xhr, resp, text) {
+                    console.log(xhr, resp, text);
+                    alert(xhr.responseJSON.msg)
+                }
+            })
+            });
+</script>
+
+{% endblock %}

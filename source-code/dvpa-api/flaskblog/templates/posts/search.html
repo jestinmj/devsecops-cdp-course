@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+  {% if not query %}
+    <div class="alert alert-warning text-center cst__radius">
+      <i class="glyphicon glyphicon-info-sign"></i> No Search Query
+    </div>
+  {% else %}
+      {% autoescape false %}
+    <div class="alert alert-info text-center cst__radius">
+      <i class="glyphicon glyphicon-info-sign"></i> You Searched for : <i><span id ="searchquery"></span></i>
+    <script>
+        var keyword = location.search.substring(3);
+        document.getElementById('searchquery').innerHTML = decodeURIComponent(keyword);
+    </script>
+    {% endautoescape %}
+    </div>
+{% endif %}
+
+<div id="post">
+
+</div>
+
+     <script>
+    var slug = window.location.pathname.split("/")[2]
+     $( document ).ready(function() {
+        var url = `/api/v1/search?q=${keyword}`;
+        $.get(url, function(data, status){
+            console.log(data)
+            $.each(data, function (index, value) {
+                $("#post").append(`<h1 class="post-title"><a href="/post/${value.slug}" id="post_link">${value.title}</a>
+</h1><p class="meta" id="post_meta"> Created at: ${value.created_date}</p>`);
+            })
+        });
+     });
+    </script>
+{% endblock %}
+
+
+{% block sidebar %}
+  <div class="sidebar-module-inset">
+    <h4>Recent Comments</h4>
+    <div id="dsq-recent-comments" class="dsq-widget"></div>
+    <script type="text/javascript">
+      var disqus_shortname = '{{ disqus_shortname }}';
+    </script>
+    <script src='//{{ disqus_shortname }}.disqus.com/recent_comments_widget.js?num_items=5&hide_avatars=0&avatar_size=24&excerpt_length=50'></script>
+  </div><!-- end /.sidebar-module-inset --> 
+{% endblock %}

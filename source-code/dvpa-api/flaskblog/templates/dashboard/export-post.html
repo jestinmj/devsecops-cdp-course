@@ -1,0 +1,183 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+    {% include 'includes/message.html' %}
+  <div class="strike-line top_0">
+    <span><small>Export Post</small></span>
+  </div>
+
+<form method="POST" action="{{ url_for('dashboard.import_export_post') }}?action=export">
+<div class="form-check">
+  <input class="form-check-input-export" type="radio" name="format" id="exampleRadios1" value="json" checked>
+  <label class="form-check-label" for="exampleRadios1">
+    Json Format
+  </label>
+</div>
+<div class="form-check">
+  <input class="form-check-input-export" type="radio" name="format" id="exampleRadios2" value="yaml">
+  <label class="form-check-label" for="exampleRadios2">
+    YAML Format
+  </label>
+</div>
+{#  <div class="form-group">#}
+{#    <label for="exampleInputEmail1">Email address</label>#}
+{#    <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" placeholder="Enter email">#}
+{#    <small id="emailHelp" class="form-text text-muted">We'll never share your email with anyone else.</small>#}
+{#  </div>#}
+{#  <div class="form-group">#}
+{#    <label for="exampleInputPassword1">Password</label>#}
+{#    <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password">#}
+{#  </div>#}
+{#  <div class="form-check">#}
+{#    <input type="checkbox" class="form-check-input" id="exampleCheck1">#}
+{#    <label class="form-check-label" for="exampleCheck1">Check me out</label>#}
+{#  </div>#}
+  <button id="export-submit" type="submit" class="btn btn-danger">Export</button>
+</form>
+
+    <table class="table table-bordered table-striped">
+    <thead>
+      <th>No.</th>
+{#      <th>Title</th>#}
+      <th>Created</th>
+      <th>Actions</th>
+    </thead>
+    <tbody>
+    {% for export in exports %}
+      <tr>
+        <th>{{ loop.index }}</th>
+{#        <th><a href="{{ url_for('dashboard.edit', slug=export.slug) }}">{{ export.title }}</a></th>#}
+        <td>{{ export.export_date.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+
+          <td>
+          <a target="_blank" href="{{ url_for('dashboard.export_download', filename=export.filename) }}" class="btn btn-xs btn-primary"><i class="glyphicon glyphicon-eye-open"></i> Download</a>
+{#          <a href="{{ url_for('dashboard.edit', slug=export.slug) }}" class="btn btn-xs btn-warning"><i class="glyphicon glyphicon-edit"></i> Edit</a>#}
+{#          <a data-toggle="modal" data-target=".modal-{{ export.pk|string() }}" class="btn btn-xs btn-danger"><i class="glyphicon glyphicon-trash"></i> Delete</a>#}
+
+        </td>
+      </tr>
+
+      <div class="modal fade modal-{{ export.pk|string() }}" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-sm" role="document">
+          <div class="modal-content">
+            <div class="panel-body text-center">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              Are you sure want to delete this post?<br /><b>{{ export.title }}</b>
+              <hr />
+
+              <div class="btn-group btn-group-justified" role="group" aria-label="...">
+                <div class="btn-group" role="group">
+{#                  <a href="{{ url_for('dashboard.delete', slug=post.slug) }}" class="btn btn-sm btn-danger"><i class="glyphicon glyphicon-trash"></i> Delete</a>#}
+                </div>
+                <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-sm btn-primary" data-dismiss="modal"><i class="glyphicon glyphicon-remove"></i> Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+    </tbody>
+  </table>
+      <div class="strike-line top_0">
+    <span><small>Import Post</small></span>
+  </div>
+
+<form method="POST" id="post-import" action="{{ url_for('dashboard.import_export_post') }}?action=import" enctype="multipart/form-data">
+
+<div class="form-check">
+  <input class="form-check-input-import" type="radio" name="format" id="exampleRadios1" value="json" checked>
+  <label class="form-check-label" for="exampleRadios1">
+    Json Format
+  </label>
+</div>
+
+<div class="form-check">
+  <input class="form-check-input-import" type="radio" name="format" id="exampleRadios2" value="yaml">
+  <label class="form-check-label" for="exampleRadios2">
+    YAML Format
+  </label>
+</div>
+
+<div class="form-group">
+    <label for="exampleFormControlFile1">Upload File</label>
+    <input type="file" class="form-control-file" id="exampleFormControlFile1" name="import_file" accept=".json,.yaml">
+  </div>
+  <button id="import-submit" type="submit" class="btn btn-danger">Import</button>
+</form>
+
+    <script>
+          $("#export-submit").on('click', function(e){
+            // send ajax
+            e.preventDefault();
+
+            $.ajax({
+                url: '{{ url_for('api_export_post') }}?action=export', // url where to submit the request
+                type : "POST", // type of action POST || GET
+                dataType : 'json', // data type
+                contentType: 'application/json',
+                headers: {Authorization: 'Bearer ' + localStorage.getItem("token")},
+                data : JSON.stringify({"format": $(".form-check-input-export:checked").val(), "action": "export"}), // post data || get data
+                success : function(result) {
+                    {#alert(result);#}
+                    location.reload();
+                },
+                error: function(xhr, resp, text) {
+                    console.log(xhr, resp, text);
+                    alert("Export Posts Error")
+                }
+            })
+            });
+
+
+          $("#import-submit").on('click', function(e){
+            // send ajax
+            e.preventDefault();
+            var formData = new FormData();
+
+            $.ajax({
+                url: '{{ url_for('api_export_post') }}?action=import', // url where to submit the request
+                type : "POST", // type of action POST || GET
+                dataType : 'json', // data type
+                contentType: 'application/json',
+                headers: {Authorization: 'Bearer ' + localStorage.getItem("token")},
+                data : JSON.stringify({"format": $(".form-check-input-import:checked").val(), "action": "import", "content": btoa(window.import_file)}), // post data || get data
+                success : function(result) {
+                    {#alert(result);#}
+                    alert("Import Success")
+                    location.reload();
+                },
+                error: function(xhr, resp, text) {
+                    console.log(xhr, resp, text);
+                    alert("Export Posts Error")
+                }
+            })
+            });
+
+          {#$(".form-control-file")[0].files[0]#}
+
+          var input = document.querySelector('input[type=file]');
+            var textarea = document.querySelector('textarea');
+
+            function readFile(event) {
+              {#textarea.textContent = event.target.result;#}
+              {#console.log(event.target.result);#}
+              {#alert(event.target.result)#}
+                window.import_file = event.target.result;
+            }
+
+            function changeFile() {
+              var file = input.files[0];
+              var reader = new FileReader();
+              reader.addEventListener('load', readFile);
+              reader.readAsText(file);
+            }
+
+input.addEventListener('change', changeFile);
+
+
+
+    </script>
+
+{% endblock %}
