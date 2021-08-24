@@ -1,0 +1,46 @@
+{% extends "dashboard/base.html" %}
+{% block meta_title %}Profile Information{% endblock %}
+
+{% block content %}
+    {% include 'includes/message.html' %}
+    <div class="strike-line top_0">
+    <span><small>
+        Profile Information
+    </small></span>
+    </div>
+
+    <form action="{{ url_for('dashboard.profile', id=session.get("id")) }}" method="post">
+
+  <div class="form-group">
+    <label for="full_name">Full Name</label>
+    <input type="text" class="form-control" id="full_name" aria-describedby="full_name" name="full_name" value="{{ user_info.full_name }}">
+    <small id="full_name" class="form-text text-muted">Enter your full name</small>
+  </div>
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input type="email" class="form-control" id="email" aria-describedby="email" name="email" value="{{ user_info.email }}">
+    <small id="email" class="form-text text-muted">Enter your email</small>
+  </div>
+
+          <div class="form-group">
+    <label for="phone_number">Phone Number</label>
+    <input type="phone_number" class="form-control" id="phone_number" aria-describedby="phone_number" name="phone_number" value="{{ user_info.phone_number }}">
+    <small id="phone_number" class="form-text text-muted">Enter your phone number</small>
+  </div>
+
+                 <div class="form-group">
+    <label for="birthdate">Birthdate</label>
+    <input type="date" class="form-control" id="birthdate" aria-describedby="birthdate" name="dob" value="{{ user_info.dob }}">
+    <small id="birthdate" class="form-text text-muted">Enter your phone number</small>
+  </div>
+
+
+        <div class="actions">
+            <input type="submit" class="btn btn-primary" value="Save">
+            <a href="{{ url_for('dashboard.index') }}" class="btn btn-default">Cancel</a>
+        </div>
+    </form>
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/bootstrap-select.min.css') }}"/>
+    <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap-select.min.js') }}"></script>
+{% endblock %}
