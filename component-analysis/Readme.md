@@ -5,7 +5,7 @@ Software Component Analysis (SCA)
 3. How to Embed Safety into Jenkins 
 4. How to Embed Safety into GitHub Actions 
 5. How to Embed Safety into CircleCI
-6. Software Component Analysis using RetireJS (mandatory)
+6. Software Component Analysis using RetireJS (mandatory) 
 7. How to Embed RetireJS into GitLab (mandatory)
 8. How to Embed RetireJS into Jenkins 
 9. How to Embed RetireJS into GitHub Actions 
