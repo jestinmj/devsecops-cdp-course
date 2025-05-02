@@ -74,6 +74,7 @@ Or you can also spawn a shell in the container.
 ```
 docker exec -it myubuntu bash
 ```
+![image](https://github.com/user-attachments/assets/eff5ff04-170e-4e37-811e-6512833f60f7)
 
 As you can see, we are dropped into a bash shell. Let’s exit out of it using exit command. 
 
