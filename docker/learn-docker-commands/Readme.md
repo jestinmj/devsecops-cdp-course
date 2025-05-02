@@ -93,6 +93,8 @@ Letâ€™s run a container that exits and see if -a options shows us the containerâ
 docker run -d --name yourubuntu ubuntu
 docker ps -a
 ```
+![image](https://github.com/user-attachments/assets/65661466-1cee-4d90-976f-d306c60e3d32)
+
 
 As you can see, the above output shows all containers of status included, exited, or stopped.
 
