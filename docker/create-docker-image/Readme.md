@@ -50,6 +50,12 @@ Next, we can create the image using the following command.
 ```
 docker build -t django.nv:1.0 .
 ```
+The purpose of this command is to build a Docker image from a Dockerfile located in the current directory (.) and tag it as django.nv:1.0.
+
+Here's a breakdown:
+docker build: This is the Docker command to build a Docker image.
+-t: This option specifies the name and tag of the image. In this case, django.nv is the name and 1.0 is the tag.
+.": This dot (.`) refers to the current directory, which contains the Dockerfile that the command will use to build the image.
 
 After the build finishes, we can see the image using the following command.
 
