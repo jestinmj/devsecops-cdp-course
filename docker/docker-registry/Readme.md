@@ -47,7 +47,7 @@ CMD ["/app/run_app_docker.sh"]
 
 The above Dockerfile has these instructions in it.
 
-- From : The above Dockerfile has these instructions in it.
+- From : Initialize an operating system as a base (image).
 - COPY : Copy the files or directories from the host to the container
 - WORKDIR : Sets the working directory in the container. Similar to the cd command on Linux
 - RUN : Executes the commands in the current image
@@ -72,6 +72,14 @@ To store the image, we need the docker repository called registry. We can deploy
 ```
 docker run -d -p 5000:5000 --restart=always --name registry registry:2
 ```
+The purpose of this command is to run a Docker container from the official registry image, version 2, in detached mode, and configure it to:
+
+1. Map port 5000 on the host machine to port 5000 in the container.
+2. Restart the container automatically if it exits or crashes.
+3. Assign a name to the container, registry, so it can be easily managed and stopped/restarted later.
+   
+In essence, this command sets up a Docker container that runs a Docker registry, which is a service that stores and manages Docker images. The --restart=always flag ensures that the registry will always be available, even in the event of a system restart or other unexpected shutdown.
+
 > Deploy a registry server: https://docs.docker.com/registry/deploying.
 
 
@@ -79,7 +87,9 @@ After the registry is up, we can push the image(s), but we need to add the image
 
 ```
 docker tag django.nv:1.0 localhost:5000/django.nv:1.0
+
 docker push localhost:5000/django.nv:1.0
+
 curl localhost:5000/v2/_catalog
 ```
 output
