@@ -82,7 +82,7 @@ If you create a file outside /opt directory it will be removed because we only m
 Next, we can also use existing volumes to be attached to new containers with a different path.
 
 ```
-docker run --name ubuntu1 -d -v demo:/tmp -it ubuntu:18.04
+docker run --name ubuntu1 -d -v demo:/tmp -it ubuntu:20.04
 ```
 ![image](https://github.com/user-attachments/assets/112a170a-ff32-4e7b-bd3f-ef6bc9f73a1b) need to run a command that requires user input or wants to the the output in real-time.
 
