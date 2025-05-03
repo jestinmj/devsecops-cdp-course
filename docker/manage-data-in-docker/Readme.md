@@ -84,7 +84,8 @@ Next, we can also use existing volumes to be attached to new containers with a d
 ```
 docker run --name ubuntu1 -d -v demo:/tmp -it ubuntu:18.04
 ```
-![image](https://github.com/user-attachments/assets/112a170a-ff32-4e7b-bd3f-ef6bc9f73a1b)
+![image](https://github.com/user-attachments/assets/112a170a-ff32-4e7b-bd3f-ef6bc9f73a1b) need to run a command that requires user input or wants to the the output in real-time.
+
 In summary, this command runs a detached Ubuntu 20.04 container, mounts a volume from the host machine to the container's /tmp directory, and allocates a pseudo-TTY for interactive use.
 
 
