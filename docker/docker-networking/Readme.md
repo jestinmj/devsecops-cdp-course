@@ -284,7 +284,8 @@ docker inspect app -f "{{json .IPAM.Config}}"
 2. Run the containers with ubuntu:18.04 image in the background
 
 ```bash
-docker run -d --name app -it ubuntu:18.04
+docker run -d -it --name myubuntu ubuntu:20.04
+
 ```
 
 3. Attach app network to the running container, detailed how to at this link
