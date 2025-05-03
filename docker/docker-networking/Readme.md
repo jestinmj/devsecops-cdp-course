@@ -272,10 +272,28 @@ As we can see, it failed to update the packages, it doesn’t have access to the
 
 Exercise
 ---------
+### "Challenge: Docker Networking"
+
 1. Create a network with bridge driver called app and define 172.10.2.0/16 as a subnet
+
+```bash
+docker network create --driver=bridge --subnet=172.10.2.0/16 app
+docker inspect app -f "{{json .IPAM.Config}}"
+```
+
 2. Run the containers with ubuntu:18.04 image in the background
-3. Attach app network to the running container, detailed how to at this [link](https://docs.docker.com/engine/reference/commandline/network_connect/)
+
+```bash
+docker run -d --name app -it ubuntu:18.04
+```
+
+3. Attach app network to the running container, detailed how to at this link
+
+```bash
+docker network connect app app
+```
+
 4. What would happen if we remove the network driver without killing the container?
 
-> Please do not forget to share the answer (a screenshot and commands) with our staff via Slack Direct Message (DM).
+Docker answer with an error while removing the network
 
