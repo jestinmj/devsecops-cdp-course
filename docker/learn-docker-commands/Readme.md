@@ -113,9 +113,14 @@ Exercise
 ----------
 
 1. How can you run the nginx container in the background?
+  docker run -d nginx:1.21.3
 2. Give the container a name such as webserver and add any environment variables into it
-3. Don’t forget to bind container port to the host as port 80 so you can access it through this url
-
+  docker run -d --name webserver --env APP=nginx nginx:1.21.3
+  OR
+  docker run -d --name webserver -e APP=nginx nginx:1.21.3
+4. Don’t forget to bind container port to the host as port 80 so you can access it through this url
+  docker stop webserver && docker rm webserver
+  docker run -d --name=webserver --env APP=nginx -p 80:80 nginx:1.21.3
 > Please do not forget to share the answer (a screenshot and commands) with our staff via Slack Direct Message (DM).
 
 > Hint
