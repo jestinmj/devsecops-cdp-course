@@ -84,6 +84,9 @@ Next, we can also use existing volumes to be attached to new containers with a d
 ```
 docker run --name ubuntu1 -d -v demo:/tmp -it ubuntu:18.04
 ```
+![image](https://github.com/user-attachments/assets/112a170a-ff32-4e7b-bd3f-ef6bc9f73a1b)
+![image](https://github.com/user-attachments/assets/93edef1a-5315-4c5d-a716-7850a1ef953e)
+
 
 Look at /tmp directory in the containers, and you will see hello.txt file there.
 
