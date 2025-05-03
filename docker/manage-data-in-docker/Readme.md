@@ -124,11 +124,13 @@ echo "Hello from the host" > /opt/hello.txt
 Remove the old containers with docker rm options, and start a new container with the same command.
 
 ```
-docker run --name ubuntu2 -d -v /opt:/opt -it ubuntu:18.04
+docker rm -f ubuntu2
+docker run --name ubuntu2 -d -v /opt:/opt -it ubuntu:20.04
 ```
 Then, you can use docker exec command to get a shell into the container and validate /opt/hello.txt file inside of it.
 
 ```
+docker exec -it ubuntu2 bash
 ls /opt
 ```
 output
@@ -143,7 +145,8 @@ rm /opt/hello.txt
 Exit from the containers and check /opt directory on the host, the file we saved inside the container would have been removed as well. It means when we’re using the volume mount option, any files in containers are the same as those on the host. Though we’re adding, editing, or removing files inside the container, they are removed from the host as well.
 
 > When do you use bind mounts? in development or production stage ?
->
+https://docs.docker.com/build/building/best-practices/
+
 > Share the answer with the staff.
 >
 > Learn more about bind mounts here.
