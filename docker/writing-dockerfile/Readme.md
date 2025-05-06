@@ -40,7 +40,7 @@ touch Dockerfile
 Use any text editor of your choice like vim/nano to add the following content to the Dockerfile.
 
 ```
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 RUN apt install nginx
 ```
@@ -55,18 +55,28 @@ Interesting, why the image build process failed? Because we didn’t do apt upda
 Let’s try to update our Dockerfile.
 
 ```
-FROM ubuntu:18.04
+cat > Dockerfile <<EOL
+FROM ubuntu:20.04
 
 RUN apt update && apt install nginx
+EOL
 ```
 Re-build the image, and it will show another error.
 
 When we create an image with Dockerfile, all instructions are run non-interactively; so, we can’t respond to the prompt when asked about any confirmation, including the Y/n question.
 
-Luckily the apt command supports non-interactive package installation using the -y option.
+Luckily the apt command supports non-interactive package installation using the -y option. `apt install -y nginx`
 
 ```
-apt install -y nginx
+cat > Dockerfile <<EOL
+FROM ubuntu:20.04
+
+RUN apt update && apt install -y nginx
+EOL
+```
+
+```
+docker build -t nginx-custom .
 ```
 
 Great, we managed to create an image with the name nginx-custom:latest. To verify the image creation process was successful, we can use the docker images command.
@@ -87,10 +97,10 @@ Working with Containers and Dockerfile
 
 In the previous step, we have learned the basic syntax of Dockerfile. Sometimes, it’s faster to create a container using an image as a base and add extra layers on top using the RUN commands. Once we are happy with the results, we can create a Dockerfile.
 
-Let’s create a container using the ubuntu:18.04 image.
+Let’s create a container using the ubuntu:20.04 image.
 
 ```
-docker run -d --name ubuntu -it ubuntu:18.04
+docker run -d -p 80:80 --name ubuntu -it ubuntu:20.04
 ```
 Use the docker exec command to start the Bash process inside the container (imagine it as though you are logging into a container).
 ```
@@ -112,7 +122,7 @@ service nginx start
 ```
 Great, our web server is running. We can verify it by requesting a webpage from our local container using the curl command.
 ```
-apt insstall curl
+apt install curl -y
 curl localhost
 ```
 output
@@ -148,7 +158,7 @@ Great, this confirms that we are running an Nginx service.
 Please take note of the previous commands, as we will be using them to create a Dockerfile.
 
 ```
-FROM ubuntu:18.04
+FROM ubuntu:20.04
 
 RUN apt update && apt install nginx -y
 ```
@@ -169,13 +179,13 @@ CMD ["/bin/bash", "-c" , "service nginx start"]
 Let’s go ahead and build the image using the above Dockerfile.
 ```
 docker build -t custom-nginx .
-docker run -d -it custom-nginx
+docker run -d -it --name custom-nginx-container custom-nginx
 docker ps -a
 ```
 output
 ```
 CONTAINER ID        IMAGE               COMMAND                  CREATED              STATUS                      PORTS               NAMES
-3ab72b7d91fe        custom-nginx        "/bin/bash -c 'servi…"   4 seconds ago        Exited (0) 3 seconds ago                        blissful_hugle
+3ab72b7d91fe        custom-nginx        "/bin/bash -c 'servi…"   4 seconds ago        Exited (0) 3 seconds ago                        custom-nginx-container
 ```
 
 As you can see, our container has Exited. We can see the logs to ascertain what went wrong using the docker logs command.
@@ -201,13 +211,19 @@ If everything goes well, our container should run without issuing the Exited sta
 Edit Dockerfile with your favorite text editor like vim/nano and paste the following code in your Dockerfile.
 
 ```
-FROM ubuntu:18.04
+cat > Dockerfile <<EOL
+FROM ubuntu:20.04
 
 RUN apt update && apt install nginx -y
 
 CMD ["/bin/bash", "-c" , "service nginx start"]
 CMD [";sleep infinity"]
+EOL
 ```
+Remove the old container and run the image as a container again.
+`docker rm -f custom-nginx-container`
+`docker run -d -it --name custom-nginx-container custom-nginx`
+
 We’re trying to add another CMD instruction to execute the command; however, we got another error now
 
 output
@@ -218,10 +234,19 @@ ddocker: Error response from daemon: OCI runtime create failed: container_linux.
 It seems only the last cmd was invoked. If more than one CMD instruction is specified, only the last CMD instruction is considered, so let’s move our sleep command on the same CMD line.
 
 ```
+cat > Dockerfile <<EOL
+FROM ubuntu:20.04
+
+RUN apt update && apt install nginx -y
+
 CMD ["/bin/bash", "-c" , "service nginx start; sleep infinity"]
+EOL
 ```
 
 Re-build the image, then run the image. It should work fine now.
+`docker build -t custom-nginx .`
+`docker rm -f custom-nginx-container`
+`docker run -d -it --name custom-nginx-container custom-nginx`
 
 sleep infinity tells the container to keep the process alive. It’s crude, but it gets the job done. There are several other approaches to keep our container process alive, and we have picked the easiest of them all.
 
@@ -233,23 +258,39 @@ Please refer to the following link to explore other approaches.
 Now, let’s explore the difference between CMD and ENTRYPOINT.
 
 ```
-FROM ubuntu:18.04
+cat > Dockerfile <<EOL
+FROM ubuntu:20.04
 
 RUN apt update && apt install nginx -y
 
 ENTRYPOINT ["/bin/bash", "-c"]
 
 CMD ["service nginx start; sleep infinity"]
+EOL
 ```
 
 With ENTRYPOINT, we set the image’s default command when running a container. What does it mean?
 
 Please have a look at the CMD instruction in the above Dockerfile. The instruction is executing a service command followed by the sleep command. What would happen if we remove sleep infinity command in CMD?
 
-Let’s remove sleep infinity from the CMD instruction altogether, re-build the image and run the image with the following command.
+Let’s remove sleep infinity from the CMD instruction altogether, re-build the image and run the image again.
 
 ```
-docker run -d --name nginx -it nginx-custom
+cat > Dockerfile <<EOL
+FROM ubuntu:20.04
+
+RUN apt update && apt install nginx -y
+
+ENTRYPOINT ["/bin/bash", "-c"]
+
+CMD ["service nginx start"]
+EOL
+```
+
+```
+docker build -t custom-nginx .
+docker rm -f custom-nginx-container
+docker run -d -it --name custom-nginx-container custom-nginx
 docker ps
 ```
 >  Analyze why the container is not alive?
@@ -262,7 +303,7 @@ docker ps
 ```
 
 > The second container is alive. Why?
->
+    > We override the CMD instruction to run bash shell instead of service nginx start to interact with the container. The CMD is overridden from the Docker Command Line Interface (CLI) when running the container using docker run command.
 > Please do not forget to share the answer with our staff via Slack Direct Message (DM).
 
 
