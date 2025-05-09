@@ -254,8 +254,9 @@ The deploy stage is typically the final step in a CI/CD pipeline. It’s respons
 ## Conclusion
 The CI/CD pipeline is a powerful system that automates software delivery. It guides the process from the first code submission to the final release in production. The pipeline is organized into key stages, each ensuring the software is created, tested, merged, and launched effectively and reliably. These stages are:
 
-Build: The initial code compilation happens here, preparing it for further testing.
-Test: The software undergoes thorough testing to find and fix any issues, ensuring quality.
-Integration: The software is combined with other systems to check how well it works within the larger setup.
-Deploy: In this final stage, the software is released to production and becomes available to users.
+- Build: The initial code compilation happens here, preparing it for further testing.
+- Test: The software undergoes thorough testing to find and fix any issues, ensuring quality.
+- Integration: The software is combined with other systems to check how well it works within the larger setup.
+- Deploy: In this final stage, the software is released to production and becomes available to users.
+- 
 By combining these steps into a smooth, automated process, the CI/CD pipeline improves the development cycle. It increases the speed, reliability, and efficiency of software delivery. This organized approach encourages continuous improvement, allowing development teams to enhance software products quickly and deliver high-quality results faster.
