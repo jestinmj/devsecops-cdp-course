@@ -260,3 +260,10 @@ The CI/CD pipeline is a powerful system that automates software delivery. It gui
 - Deploy: In this final stage, the software is released to production and becomes available to users.
 - 
 By combining these steps into a smooth, automated process, the CI/CD pipeline improves the development cycle. It increases the speed, reliability, and efficiency of software delivery. This organized approach encourages continuous improvement, allowing development teams to enhance software products quickly and deliver high-quality results faster.
+
+
+## Understanding Stages in GitLab CI/CD Pipelines
+Additional Resources
+- The Stages Of CI/CD Pipeline Easily Explained
+- GitLab - CI/CD Pipeline
+- Stages of A CI/CD Pipeline
