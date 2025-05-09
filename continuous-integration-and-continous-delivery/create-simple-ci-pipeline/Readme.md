@@ -112,29 +112,29 @@ Click on the Edit button and replace the existing content in gitlab-ci.yml file 
 
 ```
 # This is how a comment is added to a YAML file; please read them carefully.
- 
+
 stages:         # Dictionary
  - build        # this is build stage
  - test         # this is test stage
  - integration  # this is an integration stage
  - prod         # this is prod/production stage
- 
+
 job1:
-  stage: build  # this job belongs to the build stage. Here both job name and stage name is the same, i.e., build
+  stage: build  # this job belongs to the build stage.
   script:
     - echo "This is a build step."  # We are running an echo command, but it can be any command.
- 
+
 job2:
   stage: test
   script:
     - echo "This is a test step."
     - exit 1          # Non zero exit code, fails a job.
- 
-job3:          # integration job under stage integration.
-  stage: integration
+
+job3:          
+  stage: integration  # integration stage
   script:
     - echo "This is an integration step."
- 
+
 job4:
   stage: prod
   script:
