@@ -155,16 +155,26 @@ Click on the Edit button to add the following content to the .gitlab-ci.yml file
 release:
   stage: release
   script:
-   - docker build -t $CI_REGISTRY/root/django-nv .   # Build the application into Docker image
-   - docker push $CI_REGISTRY/root/django-nv         # Push the image into registry
+   - docker build -t $CI_REGISTRY_IMAGE .  # Build the application into Docker image
+   - docker push $CI_REGISTRY_IMAGE        # Push the image into registry
 ```
 
 Save changes to the file using the Commit changes button.
 
-You will notice that the release job failed with the error message no basic auth credentials. To fix this, we need to login into the registry with the correct credentials before pushing the image.
+In the above code, you will notice that we use predefined variables provided by GitLab, and we don’t need to manually define the image name.
 
-> Tip: Do not hardcode credentials in .gitlab-ci.yml script.
+Once the pipeline is finished, you will notice that the release job failed with the error message denied: access forbidden. To fix this, we need to log into the registry with the correct credentials before pushing the image.
 
+Click on the Edit button and replace the release job with the following code.
+```
+release:
+  stage: release
+  before_script:
+   - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+  script:
+   - docker build -t $CI_REGISTRY_IMAGE .  # Build the application into Docker image
+   - docker push $CI_REGISTRY_IMAGE        # Push the image into registry
+```
 
 Let’s store the secrets in Gitlab CI/CD variables by visiting https://gitlab-ce-XqiHnDZ0.lab.practical-devsecops.training/root/django-nv/-/settings/ci_cd.
 
@@ -191,8 +201,10 @@ release:
 ```
 
 Save changes to the file using the Commit changes button. Once the pipeline completes, you will notice that the release job is successful.
+![image](https://github.com/user-attachments/assets/cb3f4a4c-8c15-4ad1-bd55-0741a759ef6e)
 
 Where do we get CI_REGISTRY? Even though we don’t define it yet in Gitlab CI/CD variables, please refer to predefined environment variables [here.](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html)
+
 
 Deploy application from CI/CD pipeline
 --------------------------------
@@ -234,29 +246,28 @@ prod:
   image: kroniak/ssh-client:3.6
   environment: production
   only:
-      - master
+      - main
   before_script:
    - mkdir -p ~/.ssh
    - echo "$PROD_SSH_PRIVKEY" > ~/.ssh/id_rsa
    - chmod 600 ~/.ssh/id_rsa
    - eval "$(ssh-agent -s)"
    - ssh-add ~/.ssh/id_rsa
-   - ssh-keyscan -t rsa $PROD_HOST >> ~/.ssh/known_hosts
+   - ssh-keyscan -H $PROD_HOSTNAME >> ~/.ssh/known_hosts
   script:
    - echo
    - |
-      ssh root@$PROD_HOST << EOF
+      ssh $PROD_USERNAME@$PROD_HOSTNAME << EOF
         docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASS} ${CI_REGISTRY}
         docker rm -f django.nv
-        docker pull ${CI_REGISTRY}/root/django-nv
-        docker run -d --name django.nv -p 8000:8000 ${CI_REGISTRY}/root/django-nv
+        docker run -d --name django.nv -p 8000:8000 $CI_REGISTRY_IMAGE
       EOF
 ```
 
 Save changes to the file using the Commit changes button.
 
 ```
-image: docker:latest
+image: docker:20.10
 
 services:
   - docker:dind
@@ -294,10 +305,10 @@ test:
 release:
   stage: release
   before_script:
-   - echo $CI_REGISTRY_PASS | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+   - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
   script:
-   - docker build -t $CI_REGISTRY/root/django-nv .   # Build the application into Docker image
-   - docker push $CI_REGISTRY/root/django-nv         # Push the image into registry
+   - docker build -t $CI_REGISTRY_IMAGE .  # Build the application into Docker image
+   - docker push $CI_REGISTRY_IMAGE        # Push the image into registry
 
 integration:
   stage: integration
@@ -311,22 +322,21 @@ prod:
   image: kroniak/ssh-client:3.6
   environment: production
   only:
-      - master
+      - main
   before_script:
    - mkdir -p ~/.ssh
    - echo "$PROD_SSH_PRIVKEY" > ~/.ssh/id_rsa
    - chmod 600 ~/.ssh/id_rsa
    - eval "$(ssh-agent -s)"
    - ssh-add ~/.ssh/id_rsa
-   - ssh-keyscan -t rsa $PROD_HOST >> ~/.ssh/known_hosts
+   - ssh-keyscan -H $PROD_HOSTNAME >> ~/.ssh/known_hosts
   script:
    - echo
    - |
-      ssh root@$PROD_HOST << EOF
-        docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASS} ${CI_REGISTRY}
+      ssh $PROD_USERNAME@$PROD_HOSTNAME << EOF
+        docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
         docker rm -f django.nv
-        docker pull ${CI_REGISTRY}/root/django-nv
-        docker run -d --name django.nv -p 8000:8000 ${CI_REGISTRY}/root/django-nv
+        docker run -d --name django.nv -p 8000:8000 $CI_REGISTRY_IMAGE
       EOF
 ```
 
@@ -338,5 +348,9 @@ Let’s see the results by visiting https://gitlab-ce-XqiHnDZ0.lab.practical-dev
 
 Click on the appropriate job name to see the output.
 
-We should also see a running django.nv (Task Manager) at [this URL](https://prod-xqihndz0.lab.practical-devsecops.training/).
+![image](https://github.com/user-attachments/assets/cd27d455-bd8f-464d-a1af-3541f75acdf5)
 
+We should also see a running django.nv (Task Manager) at [this URL](https://prod-xqihndz0.lab.practical-devsecops.training/).
+> If you can access above URL, It means the deployment process is successful
+
+There you go! We have successfully implemented Continuous Deployment (CD), and that’s all for now. See you in the next lesson!
