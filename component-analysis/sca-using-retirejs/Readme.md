@@ -39,18 +39,47 @@ curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dea
 NODE_MAJOR=20
 echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
 apt update
+
+
 ```
 ![image](https://github.com/user-attachments/assets/4ed6f0e6-b07d-480d-8d09-7c27eabe19a7)
 ![image](https://github.com/user-attachments/assets/7c0c05c7-7708-4be1-a0b9-ae6930804277)
 
+Then we can install the RetireJS tool on the system to find the insecure Javascript libraries.
+`apt install nodejs -y`
+`npm install -g retire@5.0.0`
 
-OLD ONE:
+`retire --help`
 ```
-curl -sL https://deb.nodesource.com/setup_12.x | bash -
-apt install nodejs -y
-npm install -g retire
-retire --help
+Usage: retire [options]
+
+Options:
+  -V, --version            output the version number
+  -v, --verbose            Show identified files (by default only vulnerable files are shown)
+  -c, --nocache            Don't use local cache
+  --jspath <path>          Folder to scan for javascript files (deprecated)
+  --path <path>            Folder to scan for javascript files
+  --jsrepo <path|url>      Local or internal version of repo. Can be multiple comma separated. Default: 'central')
+  --cachedir <path>        Path to use for local cache instead of /tmp/.retire-cache
+  --proxy <url>            Proxy url (http://some.host:8080)
+  --outputformat <format>  Valid formats: text, json, jsonsimple, depcheck (experimental), cyclonedx and cyclonedxJSON
+  --outputpath <path>      File to which output should be written
+  --ignore <paths>         Comma delimited list of paths to ignore
+  --ignorefile <path>      Custom ignore file, defaults to .retireignore / .retireignore.json
+  --severity <level>       Specify the bug severity level from which the process fails. Allowed levels none, low, medium, high, critical. Default:
+                           none
+  --exitwith <code>        Custom exit code (default: 13) when vulnerabilities are found
+  --colors                 Enable color output (console output only)
+  --insecure               Enable fetching remote jsrepo/noderepo files from hosts using an insecure or self-signed SSL (TLS) certificate
+  --ext <extensions>       Comma separated list of file extensions for JavaScript files. The default is "js"
+  --cacert <path>          Use the specified certificate file to verify the peer used for fetching remote jsrepo/noderepo files
+  --includeOsv             Include OSV advisories in the output
+  --deep                   Deep scan (slower and experimental)
+  -h, --help               display help for command
 ```
+
+
+
 
 Run the Scanner
 ----------
@@ -120,7 +149,7 @@ cat package.json
 As we can see, we are using various javascript libraries in this project. Let’s find if we are using any vulnerable libraries.
 
 ```
-retire --outputformat json --outputpath retire_output.json
+retire --outputformat json --outputpath no-npm-install-retire-output.json
 ```
 output
 ```
@@ -159,7 +188,7 @@ found 252 vulnerabilities (78 low, 85 moderate, 86 high, 3 critical)
 Then, re-run the previous command to scan the dependencies. Once done, you can use the cat command to see the RetireJS output with the help of jq command.
 
 ```
-cat retire_output.json | jq
+cat no-npm-install-retire-output.json | jq .
 ---------
 ...[SNIP]...,
 
