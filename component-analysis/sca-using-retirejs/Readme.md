@@ -45,11 +45,11 @@ apt update
 ![image](https://github.com/user-attachments/assets/4ed6f0e6-b07d-480d-8d09-7c27eabe19a7)
 ![image](https://github.com/user-attachments/assets/7c0c05c7-7708-4be1-a0b9-ae6930804277)
 
-Then we can install the RetireJS tool on the system to find the insecure Javascript libraries.
-`apt install nodejs -y`
-`npm install -g retire@5.0.0`
+Then we can install the RetireJS tool on the system to find the insecure Javascript libraries.<br>
+`apt install nodejs -y`<br>
+`npm install -g retire@5.0.0`<br>
 
-`retire --help`
+`retire --help`<br>
 ```
 Usage: retire [options]
 
@@ -188,7 +188,7 @@ found 252 vulnerabilities (78 low, 85 moderate, 86 high, 3 critical)
 Then, re-run the previous command to scan the dependencies. Once done, you can use the cat command to see the RetireJS output with the help of jq command.
 
 ```
-cat no-npm-install-retire-output.json | jq .
+cat retire_output.json | jq .
 ---------
 ...[SNIP]...,
 
@@ -221,16 +221,102 @@ cat no-npm-install-retire-output.json | jq .
 ```
 Oh no, we have a big issue list to work on.
 
+# Understanding the Behavior of Severity Flags
+Each security tool may have a specific flag to filter the severity of findings. In this step, we will explore into how this works using RetireJS.
+
+As shown in the second step, we can use the --severity argument to specify the severity level we want to filter. Let’s give it a try by using this command:<br>
+`retire --severity critical --outputformat json --outputpath retire_output.json`
+
+We have successfully run the scan. Let’s check if the output contains only the severity level we are interested in, which is critical.<br>
+`cat retire_output.json | jq .`
+
+You might be wondering why retire_output.json still contains low, medium and high severity issues.
+
+This behavior is not a bug but intentional.
+> Note
+>Each security tool behaves differently, and you might need to explore it further if something doesn’t work as expected.
+
+Let’s experiment with the exit codes that RetireJS provides when we filter the severity for critical and medium issues. You will notice the difference in exit codes when issues are found.
+
+First, filter for critical issues using the command below:<br>
+`retire --severity critical --outputformat json --outputpath retire_output.json`<br>
+Then, check the exit code.<br>
+`echo $?`<br>
+`0`<br>
+This shows 0, indicating no issues found with critical severity. Now, how about filtering for medium issues?<br>
+`retire --severity medium --outputformat json --outputpath retire_output.json`<br>
+`echo $?`<br>
+`13`<br>
+
+Interesting! The exit code often returns 13 instead of 1 because 13 is the default exit code set by the RetireJS tool.
+
+It’s important to note that an exit code isn’t always 1 when the tool finds security issues, it could be any number chosen by the tool’s developer.
+
+Since each developer or organization may use different exit codes, we primarily focus on whether it’s zero or non-zero. For instance, the argument we used to filter severity returned an exit code of 13.
+
+Let’s move to the next step.
+
+
 Exercise
 ---------
 
 In this exercise, you will explore and use the advanced features of Retire
 
 1. Please configure the tool such that it only throws non zero exit code when high severity issues are present in the results
+ > `retire --severity high --outputformat json --outputpath retire_output.json`  
 2. Mark a high severity issue as False Positives
-
-> Please do not forget to share the answer (a screenshot and commands) with our staff via Slack Direct Message (DM).
-
+> RetireJS allows us to mark an issue or issues as False Positive (FP) using .retireignore.json file. .retireignore.json file needs to be created first using commands such as touch .retireignore.json or with a vi editor.
+> More information about the ignore feature can be found here.
+> If you have a large number of findings, as in the retire_output.json file, and you are looking to filter issues that are of high severity, you can use the jq tool for filtering.
+Before creating the ignore file, let’s try to identify the components that have high severity.
+`cat retire_output.json | jq '.data[].results[] | select (.vulnerabilities[]?.severity=="high") | .component,.version'`
+<br>
+```
+cat >/webapp/.retireignore.json<<EOF
+[
+    {
+        "component": "lodash",
+        "version": "1.0.1",
+        "justification" : "False Positive"
+    },
+    {
+        "component": "dojo",
+        "version": "1.4.2",
+        "justification" : "False Positive"
+    },
+    {
+        "component": "lodash",
+        "version": "4.17.10",
+        "justification" : "False Positive"
+    },
+    {
+        "component": "underscore.js",
+        "version": "1.8.3",
+        "justification" : "False Positive"
+    },
+    {
+        "component": "lodash",
+        "version": "2.4.2",
+        "justification" : "False Positive"
+    },
+    {
+        "component":"handlebars",
+        "version": "4.0.5",
+        "justification" : "False Positive"
+    },
+    {
+        "component":"tinyMCE",
+        "version": "4.0.26",
+        "justification" : "False Positive"
+    }
+]
+EOF
+```
+Once we mark an issue as FP, we need to use the following command while scanning to avoid showing these issues in the subsequent scans.<br>
+`retire --severity high --ignorefile .retireignore.json --outputformat json --outputpath retire_output.json`
+Let’s try to check again if the high vulnerability still exists or not.<br>
+`/webapp# `
+Voila! We successfully marked all of the high severity issues as false positives.
 
 > Hint
 >
