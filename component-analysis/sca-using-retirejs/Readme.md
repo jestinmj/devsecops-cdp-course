@@ -32,6 +32,19 @@ Install RetireJS Tool
 
 First, we need to install Node JS and NPM.
 
+NEW ONE:
+```
+mkdir -p /etc/apt/keyrings
+curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+NODE_MAJOR=20
+echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list
+apt update
+```
+![image](https://github.com/user-attachments/assets/4ed6f0e6-b07d-480d-8d09-7c27eabe19a7)
+![image](https://github.com/user-attachments/assets/7c0c05c7-7708-4be1-a0b9-ae6930804277)
+
+
+OLD ONE:
 ```
 curl -sL https://deb.nodesource.com/setup_12.x | bash -
 apt install nodejs -y
