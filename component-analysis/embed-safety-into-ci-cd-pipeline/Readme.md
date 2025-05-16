@@ -56,16 +56,6 @@ There are some jobs in the pipeline, and we need to embed the OAST tool in this 
 
 Let’s login into GitLab using the following details and execute this pipeline once again.
 
-Exercise
----------
-
-Recall techniques you have learned in the previous module (Secure SDLC and CI/CD).
-
-1. Embed OAST scanning in the test stage using the safety tool
-2. You can make use of hysnsec/safety docker image if you wish
-3. Understand the use of Docker’s -v (volume mount) flag/option
-4. Ensure you follow the DevSecOps Gospel and best practices while embedding the safety tool.
-5. Rename test job name to oast.
 
 Notes
 ---------
@@ -78,6 +68,30 @@ We need to share the project’s source code inside the container for it to acce
 
 The above option mounts the current directory in the host (runner) to /src inside the container. This could also be -v /home/ubuntu/code:/src or c:\Users\student\code:/src if you were using windows.
 
+Exercise
+---------
+
+Recall techniques you have learned in the previous module (Secure SDLC and CI/CD).
+
+1. Create a job named oast in the test stage using the safety tool. Make sure you are using hysnsec/safety docker image for this task. Understand the use of Docker’s -v (volume mount) flag/option. Ensure you follow the DevSecOps Gospel and best practices while embedding the safety tool.
+```
+oast:
+  stage: test
+  script:
+    # We are going to pull the hysnsec/safety image to run the safety scanner
+    - docker pull hysnsec/safety
+    # third party components are stored in requirements.txt for python, so we will scan this particular file with safety.
+    - docker run --rm -v $(pwd):/src hysnsec/safety check -r requirements.txt --json > oast-results.json
+  artifacts:
+    paths: [oast-results.json]
+    when: always # What does this do?
+  allow_failure: true
+```
+2. You can make use of hysnsec/safety docker image if you wish
+3. Understand the use of Docker’s -v (volume mount) flag/option
+4. Ensure you follow the DevSecOps Gospel and best practices while embedding the safety tool.
+5. Rename test job name to oast.
+
 Embed Safety in CI/CD pipeline
 --------------------------------
 
@@ -89,10 +103,10 @@ Most of the code (up to 95%) in any software project is open-source/third-party 
 
 
 ```
-image: docker:latest
+image: latest  # To run all jobs in this pipeline, use the latest docker image
 
 services:
-  - docker:dind
+  - docker:dind       # To run all jobs in this pipeline, use a docker image that contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
 
 stages:
   - build
@@ -108,10 +122,10 @@ build:
   before_script:
    - pip3 install --upgrade virtualenv
   script:
-   - virtualenv env
-   - source env/bin/activate
-   - pip install -r requirements.txt
-   - python manage.py check
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
 
 test:
   stage: test
@@ -123,19 +137,6 @@ test:
    - source env/bin/activate
    - pip install -r requirements.txt
    - python manage.py test taskManager
-
-oast-frontend:
-  stage: test
-  image: node:alpine3.10
-  script:
-    - npm install
-    - npm install -g retire # Install retirejs npm package.
-    - retire --outputformat json --outputpath retirejs-report.json --severity high --exitwith 0
-  artifacts:
-    paths: [retirejs-report.json]
-    when: always # What is this for?
-    expire_in: one week
-  allow_failure: true
 
 oast:
   stage: test
@@ -171,6 +172,8 @@ We can see the results of this pipeline by visiting https://gitlab-ce-XqiHnDZ0.l
 
 Click on the appropriate job name to see the output.
 
+> Did you notice the job failed because of non zero exit code(here, exit code 64)? Why did the job fail? Because the tool found security issues. This is the expected behavior of any DevSecOps friendly tool. You need to either fix the security issues or add allow_failure: true to let the job finish without blocking other jobs. If you have troubles understanding exit code, please go through the exercise titled Working with Exit Code.
+
 You will notice that the oast job stores the output to a file oast-results.json. We need the output file to process the results further either via APIs or vulnerability management systems like Defect Dojo.
 
 Allow the job failure
@@ -194,10 +197,10 @@ oast:
 The pipeline would look like the following.
 
 ```
-image: docker:latest
+image: docker:20.10  # To run all jobs in this pipeline, use the latest docker image
 
 services:
-  - docker:dind
+  - docker:dind       # To run all jobs in this pipeline, use a docker image that contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
 
 stages:
   - build
@@ -213,10 +216,10 @@ build:
   before_script:
    - pip3 install --upgrade virtualenv
   script:
-   - virtualenv env
-   - source env/bin/activate
-   - pip install -r requirements.txt
-   - python manage.py check
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
 
 test:
   stage: test
@@ -228,19 +231,6 @@ test:
    - source env/bin/activate
    - pip install -r requirements.txt
    - python manage.py test taskManager
-
-oast-frontend:
-  stage: test
-  image: node:latest
-  script:
-    - npm install -g retire
-    - npm install
-    - retire --outputformat json --outputpath retirejs-report.json --severity high --exitwith 0
-  artifacts:
-    paths: [retirejs-report.json]
-    when: always # What does this do?
-    expire_in: one week
-  allow_failure: true
 
 oast:
   stage: test
@@ -275,3 +265,5 @@ You will notice that the oast job has failed but didn’t block the other jobs f
 As discussed, any change to the repo kick starts the pipeline.
 
 We can see the results of this pipeline by visiting https://gitlab-ce-XqiHnDZ0.lab.practical-devsecops.training/root/django-nv/pipelines.
+
+![image](https://github.com/user-attachments/assets/ec395082-d7e4-454e-b3ae-d9393d86f3e5)
