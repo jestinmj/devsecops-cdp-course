@@ -162,10 +162,10 @@ oast-frontend:
 The final pipeline would look like the following.
 
 ```
-image: docker:latest
+image: docker:20.10  # To run all jobs in this pipeline, use the latest docker image
 
 services:
-  - docker:dind
+  - docker:dind       # To run all jobs in this pipeline, use a docker image that contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
 
 stages:
   - build
@@ -181,10 +181,10 @@ build:
   before_script:
    - pip3 install --upgrade virtualenv
   script:
-   - virtualenv env
-   - source env/bin/activate
-   - pip install -r requirements.txt
-   - python manage.py check
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
 
 test:
   stage: test
@@ -202,7 +202,7 @@ oast-frontend:
   image: node:alpine3.10
   script:
     - npm install
-    - npm install -g retire # Install retirejs npm package.
+    - npm install -g retire@5.0.0 # Install retirejs npm package.
     - retire --outputformat json --outputpath retirejs-report.json --severity high
   artifacts:
     paths: [retirejs-report.json]
