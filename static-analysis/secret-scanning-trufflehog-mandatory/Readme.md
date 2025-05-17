@@ -37,7 +37,14 @@ Install TruffleHog
 > You can find more details about the project at https://github.com/dxa4481/truffleHog.
 
 Let’s install the TruffleHog tool on the system to scan for the secrets in our code.
-
+----- NEW
+```
+wget https://github.com/trufflesecurity/trufflehog/releases/download/v3.79.0/trufflehog_3.79.0_linux_amd64.tar.gz
+tar -xvf trufflehog_3.79.0_linux_amd64.tar.gz
+chmod +x trufflehog
+mv trufflehog /usr/local/bin/
+```
+----- OLD
 ```
 pip3 install trufflehog
 ```
@@ -96,10 +103,21 @@ optional arguments:
 Run the Scanner
 ---------------
 
-As we have learned in the **DevSecOps Gospel**, we should save the output in the machine-readable format **(CSV, JSON, XML)** so it can be parsed by the machines easily.
+TruffleHog has been upgraded to version 3 and written in Golang. It has a feature to scan the repository directly instead of cloning the repository locally, and it also brings authentication when scanning against the repository.
+
+Let’s run the scan on the django.nv project.
+
+`trufflehog git http://gitlab-ce-cxlx0c4v.lab.practical-devsecops.training/root/django-nv.git --json`
+
+```
+{"level":"info-0","ts":"2024-07-06T06:29:42Z","logger":"trufflehog","msg":"running source","source_manager_worker_id":"5NutY","with_units":true}
+{"level":"info-0","ts":"2024-07-06T06:29:42Z","logger":"trufflehog","msg":"scanning repo","source_manager_worker_id":"5NutY","unit":"/tmp/trufflehog-1541-1960078102","unit_kind":"dir","repo":"http://gitlab-ce-rmaa3gra.lab.practical-devsecops.training/root/django-nv.git"}
+{"SourceMetadata":{"Data":{"Git":{"commit":"bf10953956e328f232d444c9ead87da715f18614","file":"taskManager/settings.py","email":"root \u003croot@gitlab-ce-rmaa3gra.lab.practical-devsecops.training\u003e","repository":"http://gitlab-ce-rmaa3gra.lab.practical-devsecops.training/root/django-nv.git","timestamp":"2024-07-06 06:27:24 +0000","line":22}}},"SourceID":1,"SourceType":16,"SourceName":"trufflehog - git","DetectorType":13,"DetectorName":"Slack","DecoderName":"PLAIN","Verified":false,"VerificationError":"unexpected error auth response token_revoked","Raw":"xoxp-4797898847-4799393255-4778181812-f140b6","RawV2":"","Redacted":"","ExtraData":{"rotation_guide":"https://howtorotate.com/docs/tutorials/slack/","token_type":"Slack User Token"},"StructuredData":null}
+{"SourceMetadata":{"Data":{"Git":{"commit":"bf10953956e328f232d444c9ead87da715f18614","file":"taskManager/settings.py","email":"root \u003croot@gitlab-ce-rmaa3gra.lab.practical-devsecops.training\u003e","repository":"http://gitlab-ce-rmaa3gra.lab.practical-devsecops.training/root/django-nv.git","timestamp":"2024-07-06 06:27:24 +0000","line":19}}},"SourceID":1,"SourceType":16,"SourceName":"trufflehog - git","DetectorType":2,"DetectorName":"AWS","DecoderName":"PLAIN","Verified":true,"Raw":"AKIAYVP4CIPPERUVIFXG","RawV2":"AKIAYVP4CIPPERUVIFXGZt2U1h267eViPnuSA+JO5ABhiu4T7XUMSZ+Y2Oth","Redacted":"AKIAYVP4CIPPERUVIFXG","ExtraData":{"account":"595918472158","arn":"arn:aws:iam::595918472158:user/canarytokens.com@@mirux23ppyky6hx3l6vclmhnj","is_canary":"true","message":"This is an AWS canary token generated at canarytokens.org, and was not set off; learn more here: https://trufflesecurity.com/canaries","resource_type":"Access key"},"StructuredData":null}
+{"level":"info-0","ts":"2024-07-06T06:29:43Z","logger":"trufflehog","msg":"finished scanning","chunks":235,"bytes":1567555,"verified_secrets":1,"unverified_secrets":1,"scan_duration":"742.511464ms","trufflehog_version":"3.79.0"}
+```
 
 We are using the tee command here to show the output and store it in a file simultaneously.
-
 ```
 trufflehog --json . | tee secret.json
 ```
@@ -108,6 +126,38 @@ trufflehog --json . | tee secret.json
 ```
 #     username = password = ''\n-#     if request.POST:\n-#         username = request.POST.get('username')\n-#         password = request.POST.get('password')\n-\n-#         user = authenticate(username=username, password=password)\n-#         if user is not None:\n-#             if user.is_active:\n-#                 login(request, user)\n-#                 state = \"You're successfully logged in!\"\n-#             else:\n-#                 state = \"Your account is not active, please contact the site admin.\"\n-#         else:\n-#             state = \"Your username and/or password were incorrect.\"\n+def login(request):\n+    state = \"Please log in below...\"\n+    username = password = ''\n+    if request.POST:\n+        username = request.POST.get('username')\n+        password = request.POST.get('password')\n+\n+        user = authenticate(username=username, password=password)\n+        if user is not None:\n+            if user.is_active:\n+                login(request, user)\n+                state = \"You're successfully logged in!\"\n+            else:\n+                state = \"Your account is not active, please contact the site admin.\"\n+        else:\n+            state = \"Your username and/or password were incorrect.\"\n \n-#     return render_to_response('login.html',{'state':state, 'username': username})\n+    return render_to_response('login.html',{'state':state, 'username': username})\n \n \n def proj_details(request, project_id):\n@@ -114,7 +86,15 @@ def the_comments(request, task_id):\n \tresponse = \"You're looking at the comments of question %s.\"\n \treturn HttpResponse(response % task_id)\n \n-def detail(request, task_id, project_id):\n+def detail(request, task_id, foreign_key):\n+\t#try:\n+\tif request.method == 'POST':\n+\t\tform = CommentForm(request.POST)\n+\t\tif form.is_valid():\n+\t\t\treturn HttpResponseRedirect('/thanks/')\n+\t\telse:\n+\t\t\tform = CommentForm()\n+\n \ttask = Task.objects.get(pk = task_id)\n \t#except Task.DoesNotExist:\n \t#\traise Http404\n", "reason": "High Entropy", "stringsFound": ["20821e4abaea95268880f020c9f6768288f3725a"]}
 ```
+
+However, we can conduct a scan using an SSH URL to scan the Git repository, and then convert the result into a secret.json file.
+> Our devsecops-box ssh-key has been integrated into our GitLab.
+
+`trufflehog git git@gitlab-ce-cxlx0c4v:root/django-nv.git --json | tee secret.json`
+
+Command Output:
+```
+The authenticity of host 'gitlab-ce-cxlx0c4v (10.x.x.x)' can't be established.
+ECDSA key fingerprint is SHA256:U1W8wQm8tgHmuF/T0uf1jNVCzHyhqeJ4MmGG/K4XmcI.
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+```
+Type yes and hit enter to allow the host gitlab-ce-cxlx0c4v to be a trusted source.
+```
+{"level":"info-0","ts":"2024-07-06T06:28:10Z","logger":"trufflehog","msg":"running source","source_manager_worker_id":"3toGl","with_units":true}
+{"level":"info-0","ts":"2024-07-06T06:28:10Z","logger":"trufflehog","msg":"scanning repo","source_manager_worker_id":"3toGl","unit":"/tmp/trufflehog-1485-3879622622","unit_kind":"dir","repo":"ssh://gitlab-ce-rmaa3gra/root/django-nv.git"}
+{"SourceMetadata":{"Data":{"Git":{"commit":"bf10953956e328f232d444c9ead87da715f18614","file":"taskManager/settings.py","email":"root \u003croot@gitlab-ce-rmaa3gra.lab.practical-devsecops.training\u003e","repository":"ssh://gitlab-ce-rmaa3gra/root/django-nv.git","timestamp":"2024-07-06 06:27:24 +0000","line":22}}},"SourceID":1,"SourceType":16,"SourceName":"trufflehog - git","DetectorType":13,"DetectorName":"Slack","DecoderName":"PLAIN","Verified":false,"VerificationError":"unexpected error auth response token_revoked","Raw":"xoxp-4797898847-4799393255-4778181812-f140b6","RawV2":"","Redacted":"","ExtraData":{"rotation_guide":"https://howtorotate.com/docs/tutorials/slack/","token_type":"Slack User Token"},"StructuredData":null}
+{"SourceMetadata":{"Data":{"Git":{"commit":"bf10953956e328f232d444c9ead87da715f18614","file":"taskManager/settings.py","email":"root \u003croot@gitlab-ce-rmaa3gra.lab.practical-devsecops.training\u003e","repository":"ssh://gitlab-ce-rmaa3gra/root/django-nv.git","timestamp":"2024-07-06 06:27:24 +0000","line":19}}},"SourceID":1,"SourceType":16,"SourceName":"trufflehog - git","DetectorType":2,"DetectorName":"AWS","DecoderName":"PLAIN","Verified":true,"Raw":"AKIAYVP4CIPPERUVIFXG","RawV2":"AKIAYVP4CIPPERUVIFXGZt2U1h267eViPnuSA+JO5ABhiu4T7XUMSZ+Y2Oth","Redacted":"AKIAYVP4CIPPERUVIFXG","ExtraData":{"account":"595918472158","arn":"arn:aws:iam::595918472158:user/canarytokens.com@@mirux23ppyky6hx3l6vclmhnj","is_canary":"true","message":"This is an AWS canary token generated at canarytokens.org, and was not set off; learn more here: https://trufflesecurity.com/canaries","resource_type":"Access key"},"StructuredData":null}
+{"level":"info-0","ts":"2024-07-06T06:28:10Z","logger":"trufflehog","msg":"finished scanning","chunks":235,"bytes":1567555,"verified_secrets":1,"unverified_secrets":1,"scan_duration":"2.925706023s","trufflehog_version":"3.79.0"}
+```
+
+As we have learned in the DevSecOps Gospel, we should save the output in a machine-readable format (CSV, JSON, XML) so it can be parsed by machines easily.
+
+To further analyze the output stored in the secret.json file, we can use the jq tool. jq is a powerful command-line JSON processor that allows us to extract and manipulate data from JSON files.
+
+Here’s an example of how to use jq to examine the contents of the secret.json file:
+`cat secret.json | jq`
+Executing this command will display the contents of the secret.json file in a well-formatted and readable manner. This will allow you to view the JSON data’s structure and the information extracted by TruffleHog during the scanning process.
+
+From the provided JSON output, it appears that the secret scan detected the following secrets:
+![image](https://github.com/user-attachments/assets/9e8db846-3adf-458b-9e57-19cbea49274f)
+
 
 Okay, so we got some results from the tool but are these false positives or real issues.
 
