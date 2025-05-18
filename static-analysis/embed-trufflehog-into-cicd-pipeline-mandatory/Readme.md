@@ -198,7 +198,7 @@ git-secrets:
     expire_in: one week
   allow_failure: true   #<--- allow the build to fail but don't mark it as such
 ```
-Copy text below
+Copy text below(from old version)
 
 ```
 git-secrets:
@@ -246,10 +246,10 @@ After adding the allow_failure tag, the pipeline would look like the following.
 copy text below to full pipeline
 
 ```
-image: docker:latest
+image: docker:20.10  # To run all jobs in this pipeline, use the latest docker image
 
 services:
-  - docker:dind
+  - docker:dind       # To run all jobs in this pipeline, use a docker image that contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
 
 stages:
   - build
@@ -265,10 +265,10 @@ build:
   before_script:
    - pip3 install --upgrade virtualenv
   script:
-   - virtualenv env
-   - source env/bin/activate
-   - pip install -r requirements.txt
-   - python manage.py check
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
 
 test:
   stage: test
@@ -284,9 +284,7 @@ test:
 git-secrets:
   stage: build
   script:
-    - apk add git
-    - git checkout master
-    - docker run -v $(pwd):/src --rm hysnsec/trufflehog file:///src --json | tee trufflehog-output.json
+    - docker run -v $(pwd):/src --rm hysnsec/trufflehog git http://gitlab-ce-cxlx0c4v.lab.practical-devsecops.training/root/django-nv.git --fail --json | tee trufflehog-output.json
   artifacts:
     paths: [trufflehog-output.json]
     when: always  # What is this for?
