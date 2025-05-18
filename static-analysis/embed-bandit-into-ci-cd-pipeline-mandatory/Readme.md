@@ -100,13 +100,13 @@ Recall techniques you have learned in the previous module (Secure SDLC and CI/CD
 Embed Bandit in CI/CD pipeline
 ------------------------------------------------
 
-As discussed in the Static Analysis using Bandit exercise, we can embed Bandit in our CI/CD pipeline. However, do remember you need to run the command manually before you embed this SAST tool in the pipeline.
+As discussed in the Static Analysis using Bandit exercise, we can embed Bandit in our CI/CD pipeline. However, remember that it’s important to locally test a tool before integrating it into the pipeline. Troubleshooting a tool manually in a local environment is much easier compared to troubleshooting it in a CI/CD system. Additionally, manually exploring the tool in a local environment helps you become familiar with the tool’s options and features.
 
 ```
-image: docker:latest
+image: docker:20.10  # To run all jobs in this pipeline, use the latest docker image
 
 services:
-  - docker:dind
+  - docker:dind       # To run all jobs in this pipeline, use a docker image that contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
 
 stages:
   - build
@@ -122,10 +122,10 @@ build:
   before_script:
    - pip3 install --upgrade virtualenv
   script:
-   - virtualenv env
-   - source env/bin/activate
-   - pip install -r requirements.txt
-   - python manage.py check
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
 
 test:
   stage: test
@@ -139,10 +139,10 @@ test:
    - python manage.py test taskManager
 
 sast:
-  stage: build
+  stage: build  # we moved this job from test stage to build stage, by replacing the text test to build
   script:
     # Download bandit docker container
-    - docker pull hysnsec/bandit    
+    - docker pull hysnsec/bandit
     # Run docker container, please refer docker security course, if this doesn't make sense to you.
     - docker run --user $(id -u):$(id -g) -v $(pwd):/src --rm hysnsec/bandit -r /src -f json -o /src/bandit-output.json
   artifacts:
@@ -166,6 +166,7 @@ Click on the appropriate job name to see the output.
 
 You will notice that the sast job’s output is saved in bandit-output.json file.
 
+# Allow the job failure
 We do not want to fail the builds/jobs/scan in DevSecOps Maturity Levels 1 and 2, as security tools spit a significant amount of false positives.
 
 You can use the allow_failure tag to not fail the build even though the tool found issues.
@@ -186,10 +187,10 @@ sast:
 After adding the allow_failure tag, the pipeline would look like the following.
 
 ```
-image: docker:latest
+image: docker:20.10  # To run all jobs in this pipeline, use the latest docker image
 
 services:
-  - docker:dind
+  - docker:dind       # To run all jobs in this pipeline, use a docker image that contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
 
 stages:
   - build
@@ -205,10 +206,10 @@ build:
   before_script:
    - pip3 install --upgrade virtualenv
   script:
-   - virtualenv env
-   - source env/bin/activate
-   - pip install -r requirements.txt
-   - python manage.py check
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
 
 test:
   stage: test
@@ -220,18 +221,6 @@ test:
    - source env/bin/activate
    - pip install -r requirements.txt
    - python manage.py test taskManager
-
-oast-frontend:
-  stage: test
-  image: node:alpine3.10
-  script:
-    - npm install
-    - npm install -g retire # Install retirejs npm package.
-    - retire --outputformat json --outputpath retirejs-report.json --severity high --exitwith 0
-  artifacts:
-    paths: [retirejs-report.json]
-    when: always # What is this for?
-    expire_in: one week
 
 sast:
   stage: build
@@ -269,11 +258,15 @@ Click on the appropriate job name to see the output.
 
 Notes
 --------------------
-The above option mounts the current directory in the host (runner) to /src inside the container. This could also be **-v /home/ubuntu/code:/src** or **c:\users\code:/src** if you were using windows.
+The above option mounts the current directory in the host (runner) to /src inside the container. This could also be -v /home/ubuntu/code:/src or c:\users\code:/src if you were using windows.
 
 Instead of manually removing the container after the scan, we can use --rm option so docker can clean up after itself.
 
 What is this --user option here, and why are we using it? Can you please try removing this option --user $(id -u):$(id -g) and see what would happen?
+
+
+
+For more details please refer to
 
 > Hint: https://medium.com/redbubble/running-a-docker-container-as-a-non-root-user-7d2e00f8ee15.
 
