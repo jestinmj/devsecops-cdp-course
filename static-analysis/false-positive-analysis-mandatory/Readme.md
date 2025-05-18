@@ -13,12 +13,18 @@ We will do all the exercises locally first in DevSecOps-Box, so let’s start th
 First, we need to download the source code of the project from our git repository.
 
 ```
-git clone https://gitlab.practical-devsecops.training/pdso/dvpa-api webapp
-cd webapp
+git clone https://gitlab.practical-devsecops.training/pdso/dvpa-api
+cd dvpa-api
 ```
 
 Installing Bandit
 ----------
+
+> The Bandit is a tool designed to find common security issues in Python code.
+> To do this Bandit, processes each file, builds an AST, and runs appropriate plugins against the AST nodes. Once Bandit has finished scanning all the files it generates a report.
+> Bandit was originally developed within the OpenStack Security Project and later rehomed to PyCQA.
+> You can find more details about the project at https://github.com/PyCQA/bandit.
+
 Let’s install the bandit scanner on the system to perform static analysis.
 
 ```
@@ -256,47 +262,42 @@ False Positive Analysis (FPA)
 
 There are two ways to do the False Positive Analysis. Either by reading the source code or by exploiting the vulnerability. In this exercise, we only cover the first way.
 
-As per Bandit’s scan results, we have hardcoded password strings, an insecure hash function issue, an insecure deserialization issue, and SQL injection vulnerability.
+According to Bandit’s scan results, we have identified the following security issues: hardcoded password strings, an insecure hash function issue, an insecure deserialization issue, and a SQL injection vulnerability.
 
-Let’s try to analyze if they are real issues or false positives. We will try to explore the following three issues among them.
+Now, let’s analyze whether these findings are real issues or false positives. We will focus on investigating three specific issues from the list.
 
 output
 ```
 --------------------------------------------------
->> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
-   Severity: Medium   Confidence: Medium
-   Location: dvpa-api/flaskblog/blogapi/dashboard.py:99
-   More Info: https://bandit.readthedocs.io/en/latest/plugins/b608_hardcoded_sql_expressions.html
-98              cur = db.connection.cursor()
-99              cur.execute(f"UPDATE `users` SET `email` = '{email}', `full_name` = '{full_name}', `phone_number` = '{phone_number}', `dob` = '{dob}' WHERE `users`.`id` = {request.args.get('uid')}")
-100             db.connection.commit()
-
---------------------------------------------------
->> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
-   Severity: Medium   Confidence: Medium
-   Location: dvpa-api/flaskblog/blogapi/dashboard.py:132
-   More Info: https://bandit.readthedocs.io/en/latest/plugins/b608_hardcoded_sql_expressions.html
-131             cur.execute(
-132                 f"INSERT INTO posts (`body`, `slug`, `author`, `title`) VALUES (%s, %s, %s, %s)",
-133                 [body, slug, claim.get("id"), title])
-
---------------------------------------------------
->> Issue: [B506:yaml_load] Use of unsafe yaml load. Allows instantiation of arbitrary objects. Consider yaml.safe_load().
+>> Issue: [B303:blacklist] Use of insecure MD2, MD4, MD5, or SHA1 hash function.
    Severity: Medium   Confidence: High
-   Location: dvpa-api/flaskblog/blogapi/dashboard.py:242
-   More Info: https://bandit.readthedocs.io/en/latest/plugins/b506_yaml_load.html
-241                 elif export_format == "yaml":
-242                     import_post_data = yaml.load(import_data)
-243
+   CWE: CWE-327 (https://cwe.mitre.org/data/definitions/327.html)
+   Location: ./flaskblog/auth.py:13:23
+   More Info: https://bandit.readthedocs.io/en/1.7.4/blacklists/blacklist_calls.html#b303-md5
+12          cur = db.connection.cursor()
+13          hashsed_password = hashlib.md5(password.encode()).hexdigest()
+14          cur.execute(f"SELECT * FROM users WHERE email='{username}' AND password='{hashsed_password}'")
+
+--------------------------------------------------
+>> Issue: [B608:hardcoded_sql_expressions] Possible SQL injection vector through string-based query construction.
+   Severity: Medium   Confidence: Medium
+   CWE: CWE-89 (https://cwe.mitre.org/data/definitions/89.html)
+   Location: ./flaskblog/auth.py:14:16
+   More Info: https://bandit.readthedocs.io/en/1.7.4/plugins/b608_hardcoded_sql_expressions.html
+13          hashsed_password = hashlib.md5(password.encode()).hexdigest()
+14          cur.execute(f"SELECT * FROM users WHERE email='{username}' AND password='{hashsed_password}'")
+15          user = cur.fetchone()
+
+...[SNIP]...
 ```
 
 Analysis of the issues
 ----------
 Let’s explore the first issue now.
 ```
-98              cur = db.connection.cursor()
-99              cur.execute(f"UPDATE `users` SET `email` = '{email}', `full_name` = '{full_name}', `phone_number` = '{phone_number}', `dob` = '{dob}' WHERE `users`.`id` = {request.args.get('uid')}")
-100             db.connection.commit()
+99              cur = db.connection.cursor()
+100             cur.execute(f"UPDATE `users` SET `email` = '{email}', `full_name` = '{full_name}', `phone_number` = '{phone_number}', `dob` = '{dob}' WHERE `users`.`id` = {request.args.get('uid')}")
+101             db.connection.commit()
 ```
 
 It looks like the above code is vulnerable to SQL Injection because uid is used in the query directly, so it’s not a False Positive.
@@ -304,9 +305,9 @@ It looks like the above code is vulnerable to SQL Injection because uid is used 
 Next, lets check out the second result.
 
 ```
-131             cur.execute(
-132                 f"INSERT INTO posts (`body`, `slug`, `author`, `title`) VALUES (%s, %s, %s, %s)",
-133                 [body, slug, claim.get("id"), title])
+132             cur.execute(
+133                 f"INSERT INTO posts (`body`, `slug`, `author`, `title`) VALUES (%s, %s, %s, %s)",
+134                 [body, slug, claim.get("id"), title])
 ```
 
 The above code is definitely False Positive as we are using Parameter Binding to [create](https://www.mysqltutorial.org/sql-concat-in-mysql.aspx/) the query.
@@ -322,10 +323,154 @@ For more details about this issue, please visit [CVE-2020-1747](https://cve.mitr
 
 As mentioned before, our code is vulnerable to [Deserialization Attacks](https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html) and we can mark this as not a False Positive.
 
+# Excluding Issues Using the Baseline Feature
+In the Bandit tool, there is an argument available for ignoring known vulnerabilities. This can be used during False Positive analysis to prevent the same issues from reappearing in subsequent scans. Alternatively, you can use #nosec within the source code to ignore an issue without needing to provide a baseline file. However, this approach is not recommended for marking issues as False Positives for three main reasons:
+
+1. It requires parsing through the entire codebase to list all False Positives (FP).
+2. It doesn’t allow for programmatic marking of these issues as FP in Vulnerability Management systems such as DefectDojo.
+3. It doesn’t support creating custom criteria to fail a build in maturity levels 3 and 4.
+
+Using #nosec may not be considered a DevSecOps-friendly way to handle False Positives because it lacks the advantages of automated management and integration with existing systems, which can lead to inefficiencies and potential oversight of security vulnerabilities.
+
+# Baseline Feature
+The baseline file contains issues you would want to mark as False Positives.
+
+This is useful for ignoring known vulnerabilities that you believe are non-issues (e.g. a cleartext password in a unit test).
+
+> Note
+> It’s similar to .retireignore.json, brakeman.ignore etc., files we have seen in other labs.
+
+In layman terms, the issues you want to mark as False Positives, you will add it to this file. The real issues should not be present in this file.
+
+In order to work with baseline feature, you need to generate the baseline.json file using the below command.
+`bandit -r . -f json | tee baseline.json`
+
+To update the baseline.json file in your preferred text editor, follow these steps:
+
+1. Open the baseline.json file using any text editor of your choice.
+2. Locate the results field within the file. This field contains the list of issues identified by Bandit.
+3. Review each issue present in the results field.
+4. Remove the issues that are NOT false positives from the file, keeping only the issues that are indeed false positives.
+5. Save the changes made to the baseline.json file.
+By removing the non-false positive issues from the baseline.json file, you can ensure that only the desired false positives are retained within the file for subsequent analysis or scanning processes.
+
+Or the final baseline file will look like the following content if we marked Possible hardcoded password: ‘secret’ issue as False Positive
+```
+cat > baseline.json<<EOF
+{
+  "results": [
+    {
+      "code": "12 username = 'admin'\n13 password = 'secret'\n14 \n15 # Disqus Configuration\n16 disqus_shortname = 'blogpythonlearning'  # please change this.\n",
+      "col_offset": 11,
+      "filename": "./flaskblog/config.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'secret'",
+      "line_number": 13,
+      "line_range": [
+        13,
+        14,
+        15
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.4/plugins/b105_hardcoded_password_string.html",
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    }
+  ]
+}
+EOF
+```
+
+> Note
+> Remember we saved the output of the bandit as baseline.json hence all the issues found by Bandit in the previous scan are a part of the baseline.json file. If we do not modify the baseline.json file, and use the baseline.json file as is, then all the issues reported by bandit would be marked as False Positives.
+
+When supplying the baseline.json file, bandit will not report the issues present in the baseline.json file in the subsequent scans.
+
+Before using the baseline feature, let’s check the number of vulnerabilities we found without ignoring any false positives.
+```
+[main]  INFO    profile include tests: None
+[main]  INFO    profile exclude tests: None
+[main]  INFO    cli include tests: None
+[main]  INFO    cli exclude tests: None
+13
+```
+
+The aforementioned result represents the total number of vulnerabilities we discovered prior to implementing the baseline.
+
+Let’s use the baseline feature to observe the results.<br>
+```
+bandit -r . -f json -b baseline.json
+```
+Check the result once again.
+```
+bandit -r . -f json -b baseline.json | jq '.results | length'
+```
+```
+[main]  INFO    profile include tests: None
+[main]  INFO    profile exclude tests: None
+[main]  INFO    cli include tests: None
+[main]  INFO    cli exclude tests: None
+12
+```
+
+Wow, the total count has decreased by one after ignoring a specific issue.
+
+# Recap
+Ignoring the issue using this feature is straightforward. You only need to obtain the output from the initial scan and use it as a baseline file. Simply remove any True Positives from the baseline file, leaving only false positive issues on the list, and use it in the subsequent scan. This allows you to exclude False Positive issues from being reported in the results.
+
+In short baseline.json will be the file, where you will store/mark issues as false positives.
+
+You can read more about the baseline feature at https://bandit.readthedocs.io/en/latest/start.html?#baseline
+
 Exercise
 ---------
-1. Analyse the results and mark relevant issues as False Positive
-2. Use Bandit feature to perform False Positive as Code
+1. Create a baseline file for the dvpa-api source code. Include any issues marked as False Positive. Save the baseline file at /dvpa-api/baseline.json. Specifically, mark the issue in line 132 of the file ./flaskblog/blogapi/dashboard.py, related to potential SQL injection, as a false positive
+
+```
+cat > baseline.json <<'EOF'
+{
+  "results": [
+    {
+      "code": "132         cur.execute(\n133             f\"INSERT INTO posts (`body`, `slug`, `author`, `title`) VALUES (%s, %s, %s, %s)\",\n134             [body, slug, claim.get(\"id\"), title])\n",
+      "col_offset": 12,
+      "filename": "./flaskblog/blogapi/dashboard.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 89,
+        "link": "https://cwe.mitre.org/data/definitions/89.html"
+      },
+      "issue_severity": "MEDIUM",
+      "issue_text": "Possible SQL injection vector through string-based query construction.",
+      "line_number": 133,
+      "line_range": [
+        133
+      ],
+      "more_info": "https://bandit.readthedocs.io/en/1.7.4/plugins/b608_hardcoded_sql_expressions.html",
+      "test_id": "B608",
+      "test_name": "hardcoded_sql_expressions"
+    }
+  ]
+}
+EOF
+```
+Please save the content above as a file named baseline.json using any text editor you prefer.
+# Why the chosen issue is a false positive
+The issue chosen here is in line # 132 in the file ./flaskblog/blogapi/dashboard.py.
+
+The issue is a false positive because of the usage of %s in the SQL statement.
+
+Using %s in the SQL statement, enforces python to use parameterized queries. Hence we will use the baseline file to mask this particular issue as false positive.
+
+
+2. Please run the scan and check using grep to ensure that the 132 issues marked as False Positives do not appear in the scan results.<br>
+`bandit -r . -f json -b baseline.json`<br>
+`bandit -r . -f json -b baseline.json | grep "132 cur.execute"`<br>
+
+We use the grep command to filter the output and search for specific characters related to our False Positive issues. Specifically, we want to find the occurrence of 132 cur.execute and ensure it is removed after consuming the baseline file during the scan.
 
 > Hint
 >
