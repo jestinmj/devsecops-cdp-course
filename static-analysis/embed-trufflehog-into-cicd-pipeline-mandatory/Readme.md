@@ -87,10 +87,10 @@ As discussed in the **Secrets Scanning** exercise, we can embed TruffleHog in ou
 copy this gitlab ci configuration to .gitlab-ci.yml
 
 ```
-image: docker:latest
+image: docker:20.10  # To run all jobs in this pipeline, use the latest docker image
 
 services:
-  - docker:dind
+  - docker:dind       # To run all jobs in this pipeline, use a docker image which contains a docker daemon running inside (dind - docker in docker). Reference: https://forum.gitlab.com/t/why-services-docker-dind-is-needed-while-already-having-image-docker/43534
 
 stages:
   - build
@@ -106,10 +106,10 @@ build:
   before_script:
    - pip3 install --upgrade virtualenv
   script:
-   - virtualenv env
-   - source env/bin/activate
-   - pip install -r requirements.txt
-   - python manage.py check
+   - virtualenv env                       # Create a virtual environment for the python application
+   - source env/bin/activate              # Activate the virtual environment
+   - pip install -r requirements.txt      # Install the required third party packages as defined in requirements.txt
+   - python manage.py check               # Run checks to ensure the application is working fine
 
 test:
   stage: test
@@ -126,10 +126,12 @@ git-secrets:
   stage: build
   script:
     - docker pull hysnsec/trufflehog
-    - docker run --user $(id -u):$(id -g) -v $(pwd):/src --rm hysnsec/trufflehog file:///src
+    - docker run --user $(id -u):$(id -g) -v $(pwd):/src --rm hysnsec/trufflehog git http://gitlab-ce-cxlx0c4v.lab.practical-devsecops.training/root/django-nv.git
 ```
 
 As discussed, any change to the repo kick starts the pipeline.
+![image](https://github.com/user-attachments/assets/c8d5f91d-4179-424d-8faf-00ab13e99c8a)
+
 
 we can see the result of this pipeline by this picture:
 ![pipeline1](gambar/pipeline1.png)
@@ -157,6 +159,45 @@ Notice the last line of the above job, we have added **git status** command.
 
 The output tells us that **HEAD is detached**; what does it mean? It means we’re not on a branch but checked out a specific commit in the history. **Trufflehog needs us to be on a branch**. Hence Trufflehog didn’t find any secrets, and we can fix it with the following jobs.
 
+Our current job configuration is:
+```
+git-secrets:
+  stage: build
+  script:
+    - docker run --user $(id -u):$(id -g) -v $(pwd):/src --rm hysnsec/trufflehog git http://gitlab-ce-7w3lmtto.lab.practical-devsecops.training/root/django-nv.git
+```
+The above configuration uses Trufflehog to scan the entire git repository for secrets.
+
+Let’s break down the command:
+- --user $(id -u):$(id -g): runs the container with the current user’s UID and GID, avoiding permission issues.
+- -v $(pwd):/src: mounts the current directory to /src in the container.
+- --rm: removes the container after it finishes running.
+- hysnsec/trufflehog: the Docker image we’re using.
+- git http://gitlab-ce-cxlx0c4v.lab.practical-devsecops.training/root/django-nv.git: tells Trufflehog to use the git mode and scan the specified repository URL.
+
+The git option in Trufflehog allows it to scan the entire git history of the repository, which is more thorough than just scanning the current state of the files. This is particularly useful for finding secrets that might have been committed in the past and then removed
+
+# Notes
+When using the git option with Trufflehog, we provide the repository URL as an argument. This allows Trufflehog to clone the repository and scan its entire history, regardless of the current state of the working directory in the CI/CD environment. This approach ensures a comprehensive scan of the entire git history for potential secrets.
+
+Let’s move to the next step
+
+# Allow the job failure
+
+We do not want to fail the builds/jobs/scan in DevSecOps Maturity Levels 1 and 2, as security tools spit a significant amount of false positives.
+
+You can use the allow_failure tag to not fail the build even though the tool found issues.
+```
+git-secrets:
+  stage: build
+  script:
+    - docker run -v $(pwd):/src --rm hysnsec/trufflehog git http://gitlab-ce-cxlx0c4v.lab.practical-devsecops.training/root/django-nv.git --fail --json | tee trufflehog-output.json
+  artifacts:
+    paths: [trufflehog-output.json]
+    when: always  # What is this for?
+    expire_in: one week
+  allow_failure: true   #<--- allow the build to fail but don't mark it as such
+```
 Copy text below
 
 ```
