@@ -205,10 +205,10 @@ Let’s move to the Conclusion.
 
 # Conclusion
 Through your research and testing, you’ve learned how to:
+- Configure appropriate volumes for Docker containers
+- Manage output redirection between containers and host machines
+- Customize Docker run commands for specific needs
 
-Configure appropriate volumes for Docker containers
-Manage output redirection between containers and host machines
-Customize Docker run commands for specific needs
 Key takeaways:
 1. Read the documentation of the tool you are using
 2. Test Docker run commands locally before CI/CD integration (this is important!)
