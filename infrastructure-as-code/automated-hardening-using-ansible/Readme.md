@@ -12,7 +12,7 @@ Install Ansible
 ----------
 
 ```
-pip3 install ansible==2.10.4
+pip3 install ansible==8.7.0
 ```
 
 Create the inventory file
@@ -25,13 +25,13 @@ cat > inventory.ini <<EOL
 
 # DevSecOps Studio Inventory
 [devsecops]
-devsecops-box-XqiHnDZ0
+devsecops-box-p30jrhut
 
 [gitservers]
-gitlab-ce-XqiHnDZ0
+gitlab-ce-p30jrhut
 
 [prod]
-prod-XqiHnDZ0
+prod-p30jrhut
 EOL
 ```
 
@@ -41,12 +41,21 @@ Next, we will have to ensure the SSH’s yes/no prompt is not shown while runnin
 ssh-keyscan -t rsa prod-XqiHnDZ0 >> ~/.ssh/known_hosts
 ssh-keyscan -t rsa gitlab-ce-XqiHnDZ0 >> ~/.ssh/known_hosts
 ssh-keyscan -t rsa devsecops-box-XqiHnDZ0 >> ~/.ssh/known_hosts
+
+ssh-keyscan -H prod-p30jrhut >> ~/.ssh/known_hosts
+ssh-keyscan -H gitlab-ce-p30jrhut >> ~/.ssh/known_hosts
+ssh-keyscan -H devsecops-box-p30jrhut >> ~/.ssh/known_hosts
+
+
 ```
 
 > Pro-tip: Instead of running the ssh-keyscan command thrice, we can achieve the same result using the below command.
 
 ```
 ssh-keyscan -t rsa prod-XqiHnDZ0 gitlab-ce-XqiHnDZ0 devsecops-box-XqiHnDZ0 >> ~/.ssh/known_hosts
+
+NEW:
+ssh-keyscan -H prod-p30jrhut gitlab-ce-p30jrhut devsecops-box-p30jrhut >> ~/.ssh/known_hosts
 ```
 
 Harden the production environment
@@ -86,42 +95,38 @@ ansible-playbook -i inventory.ini ansible-hardening.yml
 Once the playbook runs, we should see the output as shown below.
 
 ```
-ansible-playbook -i inventory.ini ansible-hardening.yml
-
 PLAY [Playbook to harden ubuntu OS.] *******************************************
 
 TASK [Gathering Facts] *********************************************************
-ok: [prod-sxfnfgse]
+ok: [prod-p30jrhut]
 
 TASK [dev-sec.os-hardening : Set OS family dependent variables] ****************
-ok: [prod-sxfnfgse]
+ok: [prod-p30jrhut]
 
 TASK [dev-sec.os-hardening : Set OS dependent variables] ***********************
 
 TASK [dev-sec.os-hardening : install auditd package | package-08] **************
-changed: [prod-sxfnfgse]
+changed: [prod-p30jrhut]
 
 TASK [dev-sec.os-hardening : configure auditd | package-08] ********************
-changed: [prod-sxfnfgse]
+changed: [prod-p30jrhut]
 
 TASK [dev-sec.os-hardening : find files with write-permissions for group] ******
-ok: [prod-sxfnfgse] => (item=/usr/local/sbin)
-ok: [prod-sxfnfgse] => (item=/usr/local/bin)
-ok: [prod-sxfnfgse] => (item=/usr/sbin)
-ok: [prod-sxfnfgse] => (item=/usr/bin)
-ok: [prod-sxfnfgse] => (item=/sbin)
-ok: [prod-sxfnfgse] => (item=/bin)
+ok: [prod-p30jrhut] => (item=/usr/local/sbin)
+ok: [prod-p30jrhut] => (item=/usr/local/bin)
+ok: [prod-p30jrhut] => (item=/usr/sbin)
+ok: [prod-p30jrhut] => (item=/usr/bin)
+ok: [prod-p30jrhut] => (item=/sbin)
+ok: [prod-p30jrhut] => (item=/bin)
 
 ...[SNIP]...
 
 PLAY RECAP *********************************************************************
-prod-sxfnfgse              : ok=40   changed=19   unreachable=0    failed=0    skipped=27   rescued=0    ignored=0
+prod-p30jrhut              : ok=42   changed=20   unreachable=0    failed=0    skipped=28   rescued=0    ignored=0
 ```
 
-As we can see, there were 19 changes (changed=19) made to the production machine while hardening.
+As we can see, there were 20 changes (changed=20) made to the production machine while hardening.
 
-> As we can see, there were 19 changes (changed=19) made to the production machine while hardening.
->
 > Can we put it into CI? Yes, why not?
 
 Running ansible role as part of the CI pipeline.
@@ -165,6 +170,25 @@ ansible-hardening:
     - ansible-galaxy install dev-sec.os-hardening
     - ansible-playbook -i inventory.ini ansible-hardening.yml
 ```
+The purpose of this Ansible code is to automate the hardening of a production server by installing and running a playbook that applies security settings.
+
+Here's a breakdown of the code:
+- stage: prod: This specifies that the deployment is for a production environment.
+- image: willhallonline/ansible:2.16-ubuntu-22.04: This specifies the Docker image to use for the deployment, which is a specific version of Ansible (2.16) on an Ubuntu 22.04 base image.
+- before_script: This section runs a series of commands before the Ansible playbook is executed. These commands:
+    - Create a .ssh directory and add a private SSH key to it.
+    - Set the permissions of the private key to 600 (read and write for the owner only).
+    - Start the SSH agent and add the private key to it.
+    - Add the SSH server's fingerprint to the known_hosts file.
+- script: This section runs the Ansible playbook. The playbook is executed with the following steps:
+    - Adds a host to the inventory.ini file, specifying the production server as the host.
+    - Installs the dev-sec.os-hardening Ansible role, which is a collection of playbooks and tasks for hardening an operating system.
+    - Runs the ansible-hardening.yml playbook, which applies the security settings defined in the role.
+
+In summary, this code is used to automate the hardening of a production by installing and running an Ansible playbook that applies security settings to the server.
+
+> With the echo command, we are simply copying the contents of the private key variable stored in Gitlab CI into the id_rsa file under ~/.ssh inside the container.
+eval runs the command ssh-agent in the background and sends the key whenever SSH asks for a key in an automated fashion.
 
 Save changes to the file using the Commit changes button.
 
