@@ -357,6 +357,374 @@ EOL
 3. Execute the /hardening/ansible-hardening.yml to harden the Ubuntu production machine. Optionally put this hardening job in the CI pipeline.
 ```
 ansible-playbook -i /hardening/inventory.ini /hardening/ansible-hardening.yml
+
+
+Starting galaxy role install process
+- downloading role 'os-hardening', owned by dev-sec
+- downloading role from https://github.com/dev-sec/ansible-os-hardening/archive/6.2.0.tar.gz
+- extracting dev-sec.os-hardening to /root/.ansible/roles/dev-sec.os-hardening
+- dev-sec.os-hardening (6.2.0) was installed successfully
+/hardening# ansible-playbook -i /hardening/inventory.ini /hardening/ansible-hardening.yml
+
+PLAY [Playbook to harden Ubuntu OS.] ********************************************************************************
+
+TASK [Gathering Facts] **********************************************************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : Set OS family dependent variables] *****************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : Set OS dependent variables] ************************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : install auditd package | package-08] ***************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : configure auditd | package-08] *********************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : create limits.d-directory if it does not exist | sysctl-31a, sysctl-31b] ***************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : create additional limits config file -> 10.hardcore.conf | sysctl-31a, sysctl-31b] *****
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : set 10.hardcore.conf perms to 0400 and root ownership] *********************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove 10.hardcore.conf config file] ***************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : create login.defs | os-05, os-05b] *****************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : find files with write-permissions for group] *******************************************
+ok: [prod-p30jrhut] => (item=/usr/local/sbin)
+ok: [prod-p30jrhut] => (item=/usr/local/bin)
+ok: [prod-p30jrhut] => (item=/usr/sbin)
+ok: [prod-p30jrhut] => (item=/usr/bin)
+ok: [prod-p30jrhut] => (item=/sbin)
+ok: [prod-p30jrhut] => (item=/bin)
+
+TASK [dev-sec.os-hardening : minimize access on found files] ********************************************************
+changed: [prod-p30jrhut] => (item=[{'changed': False, 'stdout': '/usr/local/bin/terraform', 'stderr': '', 'rc': 0, 'cmd': 'find -L /usr/local/bin -perm /go+w -type f', 'start': '2025-05-21 06:22:58.501605', 'end': '2025-05-21 06:22:58.507506', 'delta': '0:00:00.005901', 'msg': '', 'invocation': {'module_args': {'_raw_params': 'find -L /usr/local/bin -perm /go+w -type f', '_uses_shell': True, 'stdin_add_newline': True, 'strip_empty_ends': True, 'argv': None, 'chdir': None, 'executable': None, 'creates': None, 'removes': None, 'stdin': None}}, 'stderr_lines': [], 'failed': False, 'item': '/usr/local/bin', 'ansible_loop_var': 'item'}, '/usr/local/bin/terraform'])
+
+TASK [dev-sec.os-hardening : change shadow ownership to root and mode to 0600 | os-02] ******************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : change passwd ownership to root and mode to 0644 | os-03] ******************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : change su-binary to only be accessible to user and group root] *************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : set option hidepid for proc filesystem] ************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : update pam on Debian systems] **********************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove pam ccreds to disable password caching] *****************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove pam_cracklib, because it does not play nice with passwdqc] **********************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : install the package for strong password checking] **************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : configure passwdqc] ********************************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove passwdqc] ***********************************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : install tally2] ************************************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : configure tally2] **********************************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : delete tally2 when retries is 0] *******************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove pam_cracklib, because it does not play nice with passwdqc] **********************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : install the package for strong password checking] **************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove passwdqc] ***********************************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : configure passwdqc and tally via central system-auth confic] ***************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : Gather package facts] ******************************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : NSA 2.3.3.5 Upgrade Password Hashing Algorithm to SHA-512] *****************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : install modprobe to disable filesystems | os-10] ***************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : check if efi is installed] *************************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove vfat from fs-list if efi is used] ***********************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove used filesystems from fs-list] **************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : disable unused filesystems | os-10] ****************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : add pinerolo_profile.sh to profile.d] **************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove pinerolo_profile.sh from profile.d] *********************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : create securetty] **********************************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove suid/sgid bit from binaries in blacklist | os-06] *******************************
+ok: [prod-p30jrhut] => (item=/usr/bin/rcp)
+ok: [prod-p30jrhut] => (item=/usr/bin/rlogin)
+ok: [prod-p30jrhut] => (item=/usr/bin/rsh)
+ok: [prod-p30jrhut] => (item=/usr/libexec/openssh/ssh-keysign)
+changed: [prod-p30jrhut] => (item=/usr/lib/openssh/ssh-keysign)
+ok: [prod-p30jrhut] => (item=/sbin/netreport)
+ok: [prod-p30jrhut] => (item=/usr/sbin/usernetctl)
+ok: [prod-p30jrhut] => (item=/usr/sbin/userisdnctl)
+ok: [prod-p30jrhut] => (item=/usr/sbin/pppd)
+ok: [prod-p30jrhut] => (item=/usr/bin/lockfile)
+ok: [prod-p30jrhut] => (item=/usr/bin/mail-lock)
+ok: [prod-p30jrhut] => (item=/usr/bin/mail-unlock)
+ok: [prod-p30jrhut] => (item=/usr/bin/mail-touchlock)
+ok: [prod-p30jrhut] => (item=/usr/bin/dotlockfile)
+ok: [prod-p30jrhut] => (item=/usr/bin/arping)
+ok: [prod-p30jrhut] => (item=/usr/sbin/uuidd)
+ok: [prod-p30jrhut] => (item=/usr/bin/mtr)
+ok: [prod-p30jrhut] => (item=/usr/lib/evolution/camel-lock-helper-1.2)
+ok: [prod-p30jrhut] => (item=/usr/lib/pt_chown)
+ok: [prod-p30jrhut] => (item=/usr/lib/eject/dmcrypt-get-device)
+ok: [prod-p30jrhut] => (item=/usr/lib/mc/cons.saver)
+
+TASK [dev-sec.os-hardening : find binaries with suid/sgid set | os-06] **********************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : gather files from which to remove suids/sgids and remove system white-listed files | os-06] ***
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove suid/sgid bit from all binaries except in system and user whitelist | os-06] ****
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : protect sysctl.conf] *******************************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : set Daemon umask, do config for rhel-family | NSA 2.2.4.1] *****************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : install initramfs-tools] ***************************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : rebuild initramfs with starting pack of modules, if module loading at runtime is disabled] ***
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : create a combined sysctl-dict if overwrites are defined] *******************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : Change various sysctl-settings, look at the sysctl-vars file for documentation] ********
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.ip_forward', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.all.forwarding', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.all.accept_ra', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.accept_ra', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.rp_filter', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.default.rp_filter', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.icmp_echo_ignore_broadcasts', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.icmp_ignore_bogus_error_responses', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.icmp_ratelimit', 'value': 100})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.icmp_ratemask', 'value': 88089})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.all.disable_ipv6', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.tcp_timestamps', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.arp_ignore', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.arp_announce', 'value': 2})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.tcp_rfc1337', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.shared_media', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.default.shared_media', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.accept_source_route', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.default.accept_source_route', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.default.accept_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.accept_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.secure_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.default.secure_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.accept_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.all.accept_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.send_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.default.send_redirects', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.all.log_martians', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv4.conf.default.log_martians', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.router_solicitations', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.accept_ra_rtr_pref', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.accept_ra_pinfo', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.accept_ra_defrtr', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.autoconf', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.dad_transmits', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'net.ipv6.conf.default.max_addresses', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'kernel.sysrq', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'fs.suid_dumpable', 'value': 0})
+changed: [prod-p30jrhut] => (item={'key': 'kernel.randomize_va_space', 'value': 2})
+changed: [prod-p30jrhut] => (item={'key': 'kernel.core_uses_pid', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'kernel.yama.ptrace_scope', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'vm.mmap_min_addr', 'value': 65536})
+changed: [prod-p30jrhut] => (item={'key': 'fs.protected_hardlinks', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'fs.protected_symlinks', 'value': 1})
+changed: [prod-p30jrhut] => (item={'key': 'vm.mmap_rnd_bits', 'value': 32})
+changed: [prod-p30jrhut] => (item={'key': 'vm.mmap_rnd_compat_bits', 'value': 16})
+changed: [prod-p30jrhut] => (item={'key': 'kernel.kptr_restrict', 'value': 2})
+changed: [prod-p30jrhut] => (item={'key': 'kernel.kexec_load_disabled', 'value': 1})
+
+TASK [dev-sec.os-hardening : Change various sysctl-settings on rhel6-hosts or older, look at the sysctl-vars file for documentation] ***
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : Apply ufw defaults] ********************************************************************
+changed: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : get UID_MIN from login.defs] ***********************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : calculate UID_MAX from UID_MIN by substracting 1] **************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : set UID_MAX on Debian-systems if no login.defs exist] **********************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : set UID_MAX on other systems if no login.defs exist] ***********************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : get all system accounts] ***************************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove always ignored system accounts from list] ***************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : change system accounts not on the user provided ignore-list] ***************************
+ok: [prod-p30jrhut] => (item=daemon)
+ok: [prod-p30jrhut] => (item=bin)
+ok: [prod-p30jrhut] => (item=sys)
+ok: [prod-p30jrhut] => (item=games)
+ok: [prod-p30jrhut] => (item=man)
+ok: [prod-p30jrhut] => (item=lp)
+ok: [prod-p30jrhut] => (item=mail)
+ok: [prod-p30jrhut] => (item=news)
+ok: [prod-p30jrhut] => (item=uucp)
+ok: [prod-p30jrhut] => (item=proxy)
+ok: [prod-p30jrhut] => (item=www-data)
+ok: [prod-p30jrhut] => (item=backup)
+ok: [prod-p30jrhut] => (item=list)
+ok: [prod-p30jrhut] => (item=irc)
+ok: [prod-p30jrhut] => (item=gnats)
+ok: [prod-p30jrhut] => (item=_apt)
+ok: [prod-p30jrhut] => (item=systemd-network)
+ok: [prod-p30jrhut] => (item=systemd-resolve)
+ok: [prod-p30jrhut] => (item=messagebus)
+ok: [prod-p30jrhut] => (item=sshd)
+ok: [prod-p30jrhut] => (item=ntp)
+
+TASK [dev-sec.os-hardening : Get user accounts | os-09] *************************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : delete rhosts-files from system | os-09] ***********************************************
+ok: [prod-p30jrhut] => (item=root)
+ok: [prod-p30jrhut] => (item=daemon)
+ok: [prod-p30jrhut] => (item=bin)
+ok: [prod-p30jrhut] => (item=sys)
+ok: [prod-p30jrhut] => (item=sync)
+ok: [prod-p30jrhut] => (item=games)
+ok: [prod-p30jrhut] => (item=man)
+ok: [prod-p30jrhut] => (item=lp)
+ok: [prod-p30jrhut] => (item=mail)
+ok: [prod-p30jrhut] => (item=news)
+ok: [prod-p30jrhut] => (item=uucp)
+ok: [prod-p30jrhut] => (item=proxy)
+ok: [prod-p30jrhut] => (item=www-data)
+ok: [prod-p30jrhut] => (item=backup)
+ok: [prod-p30jrhut] => (item=list)
+ok: [prod-p30jrhut] => (item=irc)
+ok: [prod-p30jrhut] => (item=gnats)
+ok: [prod-p30jrhut] => (item=nobody)
+ok: [prod-p30jrhut] => (item=_apt)
+ok: [prod-p30jrhut] => (item=systemd-network)
+ok: [prod-p30jrhut] => (item=systemd-resolve)
+ok: [prod-p30jrhut] => (item=messagebus)
+ok: [prod-p30jrhut] => (item=sshd)
+ok: [prod-p30jrhut] => (item=ntp)
+
+TASK [dev-sec.os-hardening : delete hosts.equiv from system | os-01] ************************************************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : delete .netrc-files from system | os-09] ***********************************************
+ok: [prod-p30jrhut] => (item=root)
+ok: [prod-p30jrhut] => (item=daemon)
+ok: [prod-p30jrhut] => (item=bin)
+ok: [prod-p30jrhut] => (item=sys)
+ok: [prod-p30jrhut] => (item=sync)
+ok: [prod-p30jrhut] => (item=games)
+ok: [prod-p30jrhut] => (item=man)
+ok: [prod-p30jrhut] => (item=lp)
+ok: [prod-p30jrhut] => (item=mail)
+ok: [prod-p30jrhut] => (item=news)
+ok: [prod-p30jrhut] => (item=uucp)
+ok: [prod-p30jrhut] => (item=proxy)
+ok: [prod-p30jrhut] => (item=www-data)
+ok: [prod-p30jrhut] => (item=backup)
+ok: [prod-p30jrhut] => (item=list)
+ok: [prod-p30jrhut] => (item=irc)
+ok: [prod-p30jrhut] => (item=gnats)
+ok: [prod-p30jrhut] => (item=nobody)
+ok: [prod-p30jrhut] => (item=_apt)
+ok: [prod-p30jrhut] => (item=systemd-network)
+ok: [prod-p30jrhut] => (item=systemd-resolve)
+ok: [prod-p30jrhut] => (item=messagebus)
+ok: [prod-p30jrhut] => (item=sshd)
+ok: [prod-p30jrhut] => (item=ntp)
+
+TASK [dev-sec.os-hardening : remove unused repositories] ************************************************************
+skipping: [prod-p30jrhut] => (item=CentOS-Debuginfo) 
+skipping: [prod-p30jrhut] => (item=CentOS-Media) 
+skipping: [prod-p30jrhut] => (item=CentOS-Vault) 
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : get yum-repository-files] **************************************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : activate gpg-check for yum-repository-files] *******************************************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : activate gpg-check for config files] ***************************************************
+skipping: [prod-p30jrhut] => (item=/etc/yum.conf) 
+skipping: [prod-p30jrhut] => (item=/etc/dnf/dnf.conf) 
+skipping: [prod-p30jrhut] => (item=/etc/yum/pluginconf.d/rhnplugin.conf) 
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove deprecated or insecure packages | package-01 - package-09] **********************
+skipping: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : remove deprecated or insecure packages | package-01 - package-09] **********************
+ok: [prod-p30jrhut]
+
+TASK [dev-sec.os-hardening : configure selinux | selinux-01] ********************************************************
+skipping: [prod-p30jrhut]
+
+RUNNING HANDLER [dev-sec.os-hardening : update-initramfs] ***********************************************************
+changed: [prod-p30jrhut]
+
+PLAY RECAP **********************************************************************************************************
+prod-p30jrhut              : ok=43   changed=20   unreachable=0    failed=0    skipped=27   rescued=0    ignored=0   
+
 ```
 
 
@@ -366,6 +734,4 @@ Optionally put this hardening job in the CI pipeline (please refer to Exercise 6
 
 
 > Trivia: Which stage should this job run in? and against which machines?
->
-> Please do not forget to share the answer (a screenshot and commands) with our staff via Slack Direct Message (DM).
 
