@@ -20,8 +20,7 @@ Let’s install the Inspec on the system to learn Compliance as Code (CaC).
 Download the Inspec debian package from the InSpec website.
 
 ```
-wget https://packages.chef.io/files/stable/inspec/4.37.8/ubuntu/18.04/inspec_4.37.8-1_amd64.deb
-dpkg -i inspec_4.37.8-1_amd64.deb
+curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -v 5.22.29 -P inspec
 inspec --help
 ```
 
@@ -36,12 +35,25 @@ mkdir inspec-profile && cd inspec-profile
 create the ubuntu profile
 ```
 inspec init profile ubuntu --chef-license accept
+
++---------------------------------------------+
+✔ 1 product license accepted.
++---------------------------------------------+
+
+ ─────────────────────────── InSpec Code Generator ─────────────────────────── 
+
+Creating new profile at /inspec-profile/ubuntu
+ • Creating file README.md
+ • Creating directory /inspec-profile/ubuntu/controls
+ • Creating file controls/example.rb
+ • Creating file inspec.yml
+
 ```
 
 Run the following command to append the inspec task to the file at ubuntu/controls/example.rb. If you wish, you can edit the file using nano or any text editor.
 
 ```
-cat >> ubuntu/controls/example.rb <<EOL
+cat > ubuntu/controls/example.rb <<EOL
 describe file('/etc/shadow') do
     it { should exist }
     it { should be_file }
@@ -63,11 +75,11 @@ output
 ```
 Location :   ubuntu
 Profile :    ubuntu
-Controls :   3
-Timestamp :  2020-05-25T22:53:52+00:00
+Controls :   1
+Timestamp :  2025-05-22T07:11:23+00:00
 Valid :      true
 
-No errors or warnings
+No errors, warnings, or offenses
 ```
 
 Now run the profile on the local-machine before executing on the server.
@@ -77,22 +89,17 @@ inspec exec ubuntu
 ```
 output
 ```
-Profile: InSpec Profile (ubuntu)
-Version: 0.1.0
-Target:  local://
+Profile:   InSpec Profile (ubuntu)
+Version:   0.1.0
+Target:    local://
+Target ID: e74dbe5a-353c-525a-b810-1f5bd17b04b9
 
-  ✔  tmp-1.0: Create /tmp directory
-     ✔  File /tmp is expected to be directory
-
-  File /tmp
-     ✔  is expected to be directory
   File /etc/shadow
      ✔  is expected to exist
      ✔  is expected to be file
      ✔  is expected to be owned by "root"
 
-Profile Summary: 1 successful control, 0 control failures, 0 controls skipped
-Test Summary: 5 successful, 0 failures, 0 skipped
+Test Summary: 3 successful, 0 failures, 0 skipped
 ```
 
 Run the Inspec tool to test for compliance against a server
@@ -101,7 +108,7 @@ Run the Inspec tool to test for compliance against a server
 Let’s try to run the custom profile created by us against the server. Before executing the profile we need to execute the below command to avoid being prompted with Yes or No when connecting to a server via ssh.
 
 ```
-echo "StrictHostKeyChecking no" >> ~/.ssh/config
+echo "StrictHostKeyChecking accept-new" >> ~/.ssh/config
 ```
 
 This commands prevent the ssh agent from prompting YES or NO question
@@ -117,26 +124,152 @@ inspec exec ubuntu -t ssh://root@prod-XqiHnDZ0 -i ~/.ssh/id_rsa --chef-license a
 - --chef-license option ensures that we are accepting license agreement automatically.
 
 ```
-Profile: InSpec Profile (ubuntu)
-Version: 0.1.0
-Target:  ssh://root@prod-jftfefdf:22
+Profile:   InSpec Profile (ubuntu)
+Version:   0.1.0
+Target:    ssh://root@prod-p30jrhut:22
+Target ID: fae01aff-6e53-59df-9938-5c5bf056258e
 
-  ✔  tmp-1.0: Create /tmp directory
-     ✔  File /tmp is expected to be directory
-
-  File /tmp
-     ✔  is expected to be directory
   File /etc/shadow
      ✔  is expected to exist
      ✔  is expected to be file
      ✔  is expected to be owned by "root"
 
-Profile Summary: 1 successful control, 0 control failures, 0 controls skipped
-Test Summary: 5 successful, 0 failures, 0 skipped
+Test Summary: 3 successful, 0 failures, 0 skipped
 ```
 
 Exercise 8.3 Create an InSpec profile for PCI/DSS
 --------
+1. Create new inspec profile named challenge in /inspec-profile directory using inspect init
+    We have created the /inspec-profile directory. To ensure you are inside this directory, use the pwd command. If you find that you are not in that directory, use the command below.
+    <br>`cd /inspec-profile`
+    Create a new profile named challenge inside the /inspec-profile directory.
+    <br>`inspec init profile challenge --chef-license accept`
+    ```
+    ─────────────────────────── InSpec Code Generator ─────────────────────────── 
+
+    Creating new profile at /inspec-profile/challenge
+     • Creating file README.md
+     • Creating directory /inspec-profile/challenge/controls
+     • Creating file controls/example.rb
+     • Creating file inspec.yml
+    ```
+2. Edit the newly created InSpec skeleton to include four basic checks: system, password, ssh, and useradd, based on PCI/DSS requirements. You can find details in the [PCI/DSS requirements document](https://www.chef.io/docs/default-source/whitepapers/guidetopcidsscompliance.pdf)
+
+Run the command below to add PCI/DSS checks to your InSpec profile.
+> For reference, check the [PCI/DSS requirements document](https://www.chef.io/docs/default-source/whitepapers/guidetopcidsscompliance.pdf):
+> - Page 8: Compare system and password requirements with the provided hint.
+> - Page 12: Review the useradd command requirements.
+> - For SSH configuration, refer to the provided hint as it’s not included in the referenced document.
+```
+cat > /inspec-profile/challenge/controls/example.rb <<EOL
+describe file('/etc/pam.d/system-auth') do
+    its('content') { 
+        should match(/^\s*password\s+requisite\s+pam_pwquality\.so\s+(\S+\s+)*try_first_pass/)
+    }
+    its('content') {
+        should match(/^\s*password\s+requisite\s+pam_pwquality\.so\s+(\S+\s+)*retry=[3210]/)
+    }
+end
+
+describe file('/etc/pam.d/password-auth') do
+    its('content') { 
+        should match(/^\s*password\s+requisite\s+pam_pwquality\.so\s+(\S+\s+)*try_first_pass/)
+    }
+    its('content') {
+        should match(/^\s*password\s+requisite\s+pam_pwquality\.so\s+(\S+\s+)*retry=[3210]/)
+    }
+end
+
+describe file('/etc/default/useradd') do
+    its('content') {
+        should match(/^\s*INACTIVE\s*=\s*(30|[1-2][0-9]|[1-9])\s*(\s+#.*)?$/)
+    }
+end
+
+describe file('/etc/ssh/sshd_config') do
+    it { should exist }
+    it { should be_file }
+    it { should be_owned_by 'root' }
+    its('content') { should match 'PasswordAuthentication no' }
+end
+EOL
+```
+
+3. Test the challenge InSpec profile locally before integrating it into the CI pipeline
+<br>`inspec check challenge`
+```
+Location :   challenge
+Profile :    challenge
+Controls :   4
+Timestamp :  2023-12-10T00:15:21+00:00
+Valid :      true
+
+No errors, warnings, or offenses
+```
+<br>`inspec exec challenge`
+```
+...[SNIP]...
+
+  File /etc/ssh/sshd_config
+     ✔  is expected to exist
+     ✔  is expected to be file
+     ✔  is expected to be owned by "root"
+     ✔  content is expected to match "PasswordAuthentication no"
+
+Test Summary: 4 successful, 5 failures, 0 skipped
+```
+
+
+4. Commit the challenge InSpec profile to your project’s repository using GitLab UI or Git commands.
+
+If you’re in the /inspec-profile directory, you’ll need to navigate to a different directory before cloning the repository to avoid conflicts with the existing InSpec profile.
+<br>`cd`
+
+It will switch your directory to /root. Let’s ensure we are in the correct directory.
+Then, run the following commands to push challenge profile into your GitLab repository:
+```
+git clone git@gitlab-ce-p30jrhut:root/django-nv.git
+cd django-nv
+cp -r /inspec-profile/challenge challenge
+git add challenge
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+git commit -m "Add custom inspec profile"
+git push origin main
+```
+
+5. In the .gitlab-ci.yml file, add a new job named compliance in the test stage to execute the profile using the InSpec command. Use the hysnsec/inspec Docker image to run the command.
+
+Create a job named compliance directly in the .gitlab-ci.yml file within the django.nv repository by copying the following content.
+```
+image: docker:20.10
+
+services:
+  - docker:dind
+
+stages:
+  - test
+
+compliance:
+  stage: test
+  script:
+    - docker run -i --rm -v $(pwd):/share hysnsec/inspec check challenge --chef-license accept
+    - docker run -i --rm -v $(pwd):/share hysnsec/inspec exec challenge --chef-license accept
+  allow_failure: true
+```
+Alternatively, you can directly make changes to the repository using the command provided below in the terminal (DevSecOps Box).
+```
+Alternatively, you can directly make changes to the repository using the command provided below in the terminal (DevSecOps Box).
+```
+Push the changes to the repository.
+```
+git add .gitlab-ci.yml
+git commit -m "Update .gitlab-ci.yml"
+git push origin main
+```
+
+
+
 
 1. Use Inspec’s init command to create a new profile
 2. Edit our newly created Inspec skeleton to add new functionality like checking for the content of a file on a remote machine
