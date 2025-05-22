@@ -20,9 +20,47 @@ Let’s install the Inspec on the system to learn Compliance as Code (CaC).
 Download the Inspec debian package from the InSpec website.
 
 ```
-wget https://packages.chef.io/files/stable/inspec/4.37.8/ubuntu/18.04/inspec_4.37.8-1_amd64.deb
+wget https://packages.chef.io/files/stable/inspec/5.22.29/ubuntu/18.04/inspec_5.22.29-1_amd64.deb
+
+# Install the downloaded package.
 dpkg -i inspec_4.37.8-1_amd64.deb
 inspec --help
+```
+
+```
+Commands:
+  inspec archive PATH                                  # Archive a profile to a tar file (default) or zip file.
+  inspec automate SUBCOMMAND or compliance SUBCOMMAND  # Chef Automate commands
+  inspec check PATH                                    # Verify the metadata in the `inspec.yml` file, verif...
+  inspec clear_cache                                   # clears the InSpec cache. Useful for debugging.
+  inspec detect                                        # detects the target OS.
+  inspec env                                           # Outputs shell-appropriate completion configuration.
+  inspec exec LOCATIONS                                # Run all test files at the specified locations.
+  inspec export PATH                                   # read the profile in PATH and generate a summary in ...
+  inspec habitat SUBCOMMAND                            # Manage Habitat with Chef InSpec
+  inspec help [COMMAND]                                # Describe available commands or one specific command
+  inspec init SUBCOMMAND                               # Generate InSpec code
+  inspec json PATH                                     # read all tests in the PATH and generate a JSON summ...
+  inspec plugin SUBCOMMAND                             # Manage Chef InSpec and Train plugins
+  inspec shell                                         # open an interactive debugging shell.
+  inspec sign SUBCOMMAND                               # Manage Chef InSpec profile signing.
+  inspec supermarket SUBCOMMAND ...                    # Supermarket commands
+  inspec vendor PATH                                   # Download all dependencies and generate a lockfile i...
+  inspec version                                       # prints the version of this tool.
+
+Options:
+  l, [--log-level=LOG_LEVEL]                        # Set the log level: info (default), debug, warn, error
+     [--log-location=LOG_LOCATION]                  # Location to send diagnostic log messages to. (default: $stdout or Inspec::Log.error)
+     [--diagnose], [--no-diagnose]                  # Show diagnostics (versions, configurations)
+     [--color], [--no-color]                        # Use colors in output.
+     [--interactive], [--no-interactive]            # Allow or disable user interaction
+     [--disable-user-plugins]                       # Disable loading all plugins that the user installed.
+     [--enable-telemetry], [--no-enable-telemetry]  # Allow or disable telemetry
+     [--chef-license=CHEF_LICENSE]                  # Accept the license for this product and any contained products: accept, accept-no-persist, accept-silent
+
+
+About Chef InSpec:
+  Patents: chef.io/patents
 ```
 
 Run the Inspec profile
@@ -33,13 +71,13 @@ Let’s try to check whether our servers follow the linux-baseline best practice
 Before executing the profile, we need to run the below command:
 
 ```
-echo "StrictHostKeyChecking no" >> ~/.ssh/config
+echo "StrictHostKeyChecking accept-new" >> ~/.ssh/config
 ```
 This command prevents the ssh agent from prompting YES or NO question.
 
 Let’s run the Inspec against the production server.
 ```
-inspec exec https://github.com/dev-sec/linux-baseline -t ssh://root@prod-XqiHnDZ0 -i ~/.ssh/id_rsa --chef-license accept
+inspec exec https://github.com/dev-sec/linux-baseline.git -t ssh://root@prod-p30jrhut -i ~/.ssh/id_rsa --chef-license accept
 ```
 
 - The first parameter tells the Inspec profile that we need to run against the server
@@ -52,11 +90,10 @@ output
 +---------------------------------------------+
 ✔ 1 product license accepted.
 +---------------------------------------------+
-[2021-04-12T22:47:51+00:00] WARN: URL target https://github.com/dev-sec/linux-baseline transformed to https://github.com/dev-sec/linux-baseline/archive/master.tar.gz. Consider using the git fetcher
 
 Profile: DevSec Linux Security Baseline (linux-baseline)
 Version: 2.8.0
-Target:  ssh://root@prod-XqiHnDZ0:22
+Target:  ssh://root@prod-p30jrhut:22
 
   ✔  os-01: Trusted hosts login
      ✔  File /etc/hosts.equiv is expected not to exist
@@ -81,19 +118,84 @@ Target:  ssh://root@prod-XqiHnDZ0:22
      ↺  Skipped control due to only_if condition.
   ↺  sysctl-33: CPU No execution Flag or Kernel ExecShield
      ↺  Skipped control due to only_if condition.
+   ↺  sysctl-34: Ensure links are protected
+     ↺  Skipped control due to only_if condition.
 
 
-Profile Summary: 16 successful controls, 2 control failures, 37 controls skipped
-Test Summary: 60 successful, 7 failures, 37 skipped
+Profile Summary: 17 successful controls, 3 control failures, 38 controls skipped
+Test Summary: 65 successful, 8 failures, 38 skipped
 ```
-You can see, the output does inform us about 16 successful controls and 2 control failures.
+You can see, that the output does inform us about 17 successful controls and 3 control failures.
 
 Exercise 8.1/8.2 Using Ansible/Inspec to achieve compliance.
 --------------------------------
 
-This exercise is to do continuous compliance scanning for production Infrastructure. We will be using the configuration management tools, i.e., Ansible and a dedicated utility like Inspec. Please embed these two tools into your DevOps pipeline.
+This exercise is to do continuous compliance scanning for the production server (prod-p30jrhut). We will be embedding a dedicated Compliance as Code tool called Inspec in the CI/CD pipeline.
 
 Doing so will provide immediate feedback to the DevOps teams of any deviation from standard policies.
+
+You can use the following URL and credentials to log into GitLab CI/CD.
+Let’s login into the GitLab and configure the production machine https://gitlab-ce-p30jrhut.lab.practical-devsecops.training/root/django-nv/-/settings/ci_cd.
+
+Click the Expand button under the Variables section, then click on the Add Variable button.
+
+Add the following key/value pair in the form.
+![image](https://github.com/user-attachments/assets/5b8d558e-6c86-41dd-94ad-ddd515e387b6)
+
+1. Use hysnsec/inspec docker image to perform continuous compliance scanning with [https://github.com/dev-sec/linux-baseline](https://github.com/dev-sec/linux-baseline) profile and embed it as part of the prod stage with job name as inspec
+```
+inspec:
+  stage: prod
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$DEPLOYMENT_SERVER_SSH_PRIVKEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOYMENT_SERVER >> ~/.ssh/known_hosts
+  script:
+    - docker run --rm -v ~/.ssh:/root/.ssh -v $(pwd):/share hysnsec/inspec exec https://github.com/dev-sec/linux-baseline.git -t ssh://root@$DEPLOYMENT_SERVER -i ~/.ssh/id_rsa --chef-license accept
+```
+2. The job should only be triggered when changes are pushed to the main branch (don’t use rules attribute)
+```
+inspec:
+  stage: prod
+  only:
+    - main
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$DEPLOYMENT_SERVER_SSH_PRIVKEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOYMENT_SERVER >> ~/.ssh/known_hosts
+  script:
+    - docker run --rm -v ~/.ssh:/root/.ssh -v $(pwd):/share hysnsec/inspec exec https://github.com/dev-sec/linux-baseline.git -t ssh://root@$DEPLOYMENT_SERVER -i ~/.ssh/id_rsa --chef-license accept
+```
+Referecnce: https://docs.gitlab.com/ee/ci/yaml/#only--except
+
+3. Save the output as JSON file at /share/inspec-output.json and upload it using artifacts attribute
+```
+inspec:
+  stage: prod
+  only:
+    - main
+  environment: production
+  before_script:
+    - mkdir -p ~/.ssh
+    - echo "$DEPLOYMENT_SERVER_SSH_PRIVKEY" | tr -d '\r' > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - eval "$(ssh-agent -s)"
+    - ssh-add ~/.ssh/id_rsa
+    - ssh-keyscan -H $DEPLOYMENT_SERVER >> ~/.ssh/known_hosts
+  script:
+    - docker run --rm -v ~/.ssh:/root/.ssh -v $(pwd):/share hysnsec/inspec exec https://github.com/dev-sec/linux-baseline.git -t ssh://root@$DEPLOYMENT_SERVER -i ~/.ssh/id_rsa --chef-license accept --reporter json:/share/inspec-output.json
+  artifacts:
+    paths: [inspec-output.json]
+    when: always
+```
+Reference: https://docs.chef.io/inspec/reporters
+
 
 1. Use Ansible to achieve compliance as code (remember the changed=1 Ansible output?)
 2. Use Docker Inspec to do continuous compliance scanning and save the output into JSON file
@@ -134,7 +236,7 @@ Click on the Edit button and append the following code to the .gitlab-ci.yml fil
 inspec:
   stage: prod
   only:
-    - "master"
+    - main
   environment: production
   before_script:
     - mkdir -p ~/.ssh
@@ -142,13 +244,14 @@ inspec:
     - chmod 600 ~/.ssh/id_rsa
     - eval "$(ssh-agent -s)"
     - ssh-add ~/.ssh/id_rsa
-    - ssh-keyscan -t rsa $DEPLOYMENT_SERVER >> ~/.ssh/known_hosts
+    - ssh-keyscan -H $DEPLOYMENT_SERVER >> ~/.ssh/known_hosts
   script:
-    - docker run --rm -v ~/.ssh:/root/.ssh -v $(pwd):/share hysnsec/inspec exec https://github.com/dev-sec/linux-baseline -t ssh://root@$DEPLOYMENT_SERVER -i ~/.ssh/id_rsa --chef-license accept --reporter json:inspec-output.json
+    - docker run --rm -v ~/.ssh:/root/.ssh -v $(pwd):/share hysnsec/inspec exec https://github.com/dev-sec/linux-baseline.git -t ssh://root@$DEPLOYMENT_SERVER -i ~/.ssh/id_rsa --chef-license accept --reporter json:/share/inspec-output.json
   artifacts:
     paths: [inspec-output.json]
     when: always
 ```
+> /share directory should be used when using hysnsec/inspec image. Because it’s a custom image adding another directory would not work when you are saving the inspec output.
 
 > Reference: https://docs.chef.io/inspec/reporters.
 
